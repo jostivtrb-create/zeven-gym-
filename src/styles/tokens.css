@@ -1,0 +1,37 @@
+/* Tokens de diseño de Zeven Gym — extraídos de diseno/zeven-gym-cliente.dc.html.
+   --gym-color es el ÚNICO token que cambia por gimnasio (lo inyecta ThemeContext). */
+:root {
+  --gym-color: #16a34a;
+  --gym-color-dark: color-mix(in srgb, var(--gym-color) 70%, #000);
+  --gym-color-soft: color-mix(in srgb, var(--gym-color) 10%, #fff);
+
+  --bg: #fafaf9;
+  --surface: #ffffff;
+  --surface-2: #f7f7f5;
+  --border: #ececea;
+  --border-2: #e2e2de;
+  --text: #1c1c1a;
+  --text-2: #6b6b67;
+  --text-3: #8a8a86;
+  --text-4: #9ca3af;
+
+  --warning-text: #92400e;
+  --warning-bg: #fef3c7;
+  --danger: #b91c1c;
+  --danger-bg: #fee2e2;
+
+  /* Panel superadmin (identidad neutra Zeven, no usa --gym-color) */
+  --zeven-dark: #1a1a1a;
+
+  --radius-sm: 10px;
+  --radius: 12px;
+  --radius-md: 14px;
+  --radius-lg: 16px;
+  --radius-pill: 99px;
+  --radius-header: 24px;
+
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.1);
+
+  --font: 'Poppins', system-ui, -apple-system, sans-serif;
+}
