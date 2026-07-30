@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useGym } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
-import { obtenerCliente, listarPlanes, listarPagosCliente, listarRutinas, registrarPago, congelarMembresia, actualizarUsuario, eliminarCliente, asignarRutina, desvincularGym } from '../../services/db'
+import { obtenerCliente, listarPlanes, listarPagosCliente, listarRutinas, registrarPago, congelarMembresia, actualizarUsuario, eliminarCliente, asignarRutina, desvincularGym, calcularVencimiento, actualizarVencimiento, aISO, deISO } from '../../services/db'
 import { ESTADOS, iniciales } from './AdminClientes'
 
 const seccionTitulo = { fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-3)' }
@@ -21,6 +21,9 @@ export default function AdminDetalleCliente() {
   const [pagos, setPagos] = useState([])
   const [rutinas, setRutinas] = useState([])
   const [eligiendoPlan, setEligiendoPlan] = useState(false)
+  const [planElegido, setPlanElegido] = useState(null)
+  const [fechaVence, setFechaVence] = useState('')
+  const [editandoFecha, setEditandoFecha] = useState(false)
   const [eligiendoRutina, setEligiendoRutina] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
   const [nombreConfirm, setNombreConfirm] = useState('')
@@ -55,11 +58,33 @@ export default function AdminDetalleCliente() {
   const vence = m?.vence?.toDate?.()
   const rutinaActual = rutinas.find((r) => r.id === cliente.rutinaId)
 
-  const cobrar = async (plan) => {
+  // Paso 1: elegir el plan → se propone la fecha del próximo pago (editable)
+  const elegirPlan = (plan) => {
+    setPlanElegido(plan)
+    setFechaVence(aISO(calcularVencimiento(gym, cliente.membresia, plan)))
+  }
+
+  // Paso 2: confirmar el pago con la fecha que decidió el admin
+  const cobrar = async () => {
+    if (!planElegido || !fechaVence) return
     setOcupado(true)
     try {
-      await registrarPago(gym, uid, plan, usuario?.uid ?? null)
+      await registrarPago(gym, uid, planElegido, usuario?.uid ?? null, deISO(fechaVence))
       setEligiendoPlan(false)
+      setPlanElegido(null)
+      await cargar()
+    } finally {
+      setOcupado(false)
+    }
+  }
+
+  // Corregir solo la fecha, sin cobrar (para clientes que ya venían pagando)
+  const guardarFecha = async () => {
+    if (!fechaVence) return
+    setOcupado(true)
+    try {
+      await actualizarVencimiento(gym.id, uid, deISO(fechaVence))
+      setEditandoFecha(false)
       await cargar()
     } finally {
       setOcupado(false)
@@ -142,30 +167,69 @@ export default function AdminDetalleCliente() {
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gym-color)' }}>{pesos(m.precio)}</div>
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 3 }}>
-                {cliente.estadoDerivado === 'vencido' ? 'Venció' : 'Vence'} el {vence ? FECHA.format(vence) : '—'}
+                {cliente.estadoDerivado === 'vencido' ? 'Venció' : 'Paga el'} {vence ? FECHA.format(vence) : '—'}
               </div>
+              {editandoFecha ? (
+                <div style={{ marginTop: 12, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 12 }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 600 }}>Día en que debe pagar</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.5 }}>
+                    Ajústalo si ya venía pagando otro día. De ahí en adelante se mantiene solo.
+                  </div>
+                  <input type="date" value={fechaVence} onChange={(e) => setFechaVence(e.target.value)} style={{ width: '100%', marginTop: 8, border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: 13, fontWeight: 600, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', background: '#fff' }} />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <button onClick={guardarFecha} disabled={ocupado} style={{ flex: 1, background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '10px 0', fontSize: 12.5, fontWeight: 600 }}>
+                      {ocupado ? 'Guardando…' : 'Guardar fecha'}
+                    </button>
+                    <button onClick={() => setEditandoFecha(false)} style={{ border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', fontSize: 12.5, fontWeight: 600, color: 'var(--text-3)', background: 'var(--surface)' }}>Cancelar</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => { setFechaVence(vence ? aISO(vence) : ''); setEditandoFecha(true) }} style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gym-color)', marginTop: 6 }}>
+                  Cambiar día de pago
+                </button>
+              )}
             </>
           ) : (
             <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Sin plan activo. Regístrale su primer pago:</div>
           )}
 
           {eligiendoPlan ? (
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {planes.length === 0 && (
-                <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                  Primero crea un plan en <b>Más → Planes del gym</b>.
+            planElegido ? (
+              <div style={{ marginTop: 12, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{planElegido.nombre}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gym-color)' }}>{pesos(planElegido.precio)}</div>
                 </div>
-              )}
-              {planes.map((p) => (
-                <button key={p.id} onClick={() => cobrar(p)} disabled={ocupado} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '11px 14px', background: 'var(--surface-2)', fontSize: 13 }}>
-                  <span style={{ fontWeight: 600 }}>{p.nombre} · {p.duracionDias} días</span>
-                  <span style={{ fontWeight: 700, color: 'var(--gym-color)' }}>{pesos(p.precio)}</span>
-                </button>
-              ))}
-              <button onClick={() => setEligiendoPlan(false)} style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', padding: '6px 0' }}>Cancelar</button>
-            </div>
+                <div style={{ fontSize: 11.5, fontWeight: 600, marginTop: 12 }}>Próximo pago</div>
+                <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.5 }}>
+                  Cámbialo si el cliente ya venía pagando otro día del mes. Las próximas renovaciones respetan esta fecha.
+                </div>
+                <input type="date" value={fechaVence} onChange={(e) => setFechaVence(e.target.value)} style={{ width: '100%', marginTop: 8, border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: 13, fontWeight: 600, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', background: '#fff' }} />
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <button onClick={cobrar} disabled={ocupado} style={{ flex: 1, background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '11px 0', fontSize: 12.5, fontWeight: 600, opacity: ocupado ? 0.6 : 1 }}>
+                    {ocupado ? 'Guardando…' : 'Confirmar pago'}
+                  </button>
+                  <button onClick={() => setPlanElegido(null)} style={{ border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '11px 14px', fontSize: 12.5, fontWeight: 600, color: 'var(--text-3)', background: 'var(--surface)' }}>Atrás</button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {planes.length === 0 && (
+                  <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                    Primero crea un plan en <b>Más → Planes del gym</b>.
+                  </div>
+                )}
+                {planes.map((p) => (
+                  <button key={p.id} onClick={() => elegirPlan(p)} disabled={ocupado} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '11px 14px', background: 'var(--surface-2)', fontSize: 13 }}>
+                    <span style={{ fontWeight: 600 }}>{p.nombre} · {p.duracionDias} días</span>
+                    <span style={{ fontWeight: 700, color: 'var(--gym-color)' }}>{pesos(p.precio)}</span>
+                  </button>
+                ))}
+                <button onClick={() => setEligiendoPlan(false)} style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', padding: '6px 0' }}>Cancelar</button>
+              </div>
+            )
           ) : (
-            <button onClick={() => setEligiendoPlan(true)} disabled={ocupado} style={{ marginTop: 12, width: '100%', background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 0', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>
+            <button onClick={() => { setEligiendoPlan(true); setPlanElegido(null) }} disabled={ocupado} style={{ marginTop: 12, width: '100%', background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 0', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>
               {ocupado ? 'Guardando…' : m ? `Registrar pago y renovar` : 'Registrar primer pago'}
             </button>
           )}

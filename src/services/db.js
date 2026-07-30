@@ -221,23 +221,25 @@ export async function obtenerCliente(gymId, uid) {
   return { ...u, membresia: m, estadoDerivado: estadoCliente(u, m) }
 }
 
-/* Registra un pago y renueva la vigencia según la política del gym. */
-export async function registrarPago(gym, uid, plan, registradoPor) {
+/* Calcula cuándo vencería la membresía si se registra un pago hoy.
+   Si aún tiene días vigentes, se suman al final (no se pierden). */
+export function calcularVencimiento(gym, membresiaActual, plan) {
+  const hoy = new Date()
+  if (gym.politicas?.vigencia === 'corte_fijo' && gym.politicas?.diaCorte) {
+    return new Date(hoy.getFullYear(), hoy.getMonth() + 1, gym.politicas.diaCorte)
+  }
+  const vence = membresiaActual?.vence?.toDate?.()
+  const base = vence && vence > hoy ? vence : hoy
+  return new Date(base.getTime() + plan.duracionDias * DIA_MS)
+}
+
+/* Registra un pago y renueva la vigencia.
+   `venceManual` permite al admin fijar la fecha exacta del próximo pago
+   (útil para clientes que ya venían con su propio día de corte). */
+export async function registrarPago(gym, uid, plan, registradoPor, venceManual = null) {
   const mRef = doc(db, 'gimnasios', gym.id, 'membresias', uid)
   const mSnap = await getDoc(mRef)
-  const hoy = new Date()
-  let base = hoy
-  if (mSnap.exists()) {
-    const vence = mSnap.data().vence?.toDate?.()
-    if (vence && vence > hoy) base = vence
-  }
-  let nuevoVence
-  if (gym.politicas?.vigencia === 'corte_fijo' && gym.politicas?.diaCorte) {
-    const corte = new Date(hoy.getFullYear(), hoy.getMonth() + 1, gym.politicas.diaCorte)
-    nuevoVence = corte
-  } else {
-    nuevoVence = new Date(base.getTime() + plan.duracionDias * DIA_MS)
-  }
+  const nuevoVence = venceManual ?? calcularVencimiento(gym, mSnap.exists() ? mSnap.data() : null, plan)
   await setDoc(mRef, {
     planId: plan.id,
     planNombre: plan.nombre,
@@ -416,3 +418,12 @@ export async function vincularGym(user, gym, datosExtra = {}) {
 export async function desvincularGym(uid) {
   await updateDoc(doc(db, 'usuarios', uid), { gymId: null, rutinaId: null })
 }
+
+/* Corrige solo la fecha de vencimiento, sin registrar un pago nuevo. */
+export async function actualizarVencimiento(gymId, uid, fecha) {
+  await updateDoc(doc(db, 'gimnasios', gymId, 'membresias', uid), { vence: Timestamp.fromDate(fecha) })
+}
+
+/* Fechas <-> valor de <input type="date"> respetando la zona horaria local. */
+export const aISO = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+export const deISO = (s) => new Date(s + 'T12:00:00')
