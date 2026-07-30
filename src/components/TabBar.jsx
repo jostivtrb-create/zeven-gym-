@@ -62,11 +62,10 @@ export default function TabBar() {
     <nav
       style={{
         display: 'flex',
+        flex: 'none',
         background: 'var(--surface)',
         borderTop: '1px solid var(--border)',
         padding: '8px 6px calc(6px + env(safe-area-inset-bottom))',
-        position: 'sticky',
-        bottom: 0,
       }}
     >
       {tabs.map((t) => (

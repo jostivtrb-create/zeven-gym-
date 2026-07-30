@@ -27,11 +27,11 @@ const tabs = [
 
 export default function SuperShell() {
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <main style={{ flex: 1 }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
+      <main style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <Outlet />
       </main>
-      <nav style={{ display: 'flex', background: 'var(--surface)', borderTop: '1px solid var(--border)', padding: '8px 6px calc(6px + env(safe-area-inset-bottom))', position: 'sticky', bottom: 0 }}>
+      <nav style={{ display: 'flex', flex: 'none', background: 'var(--surface)', borderTop: '1px solid var(--border)', padding: '8px 6px calc(6px + env(safe-area-inset-bottom))' }}>
         {tabs.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.end} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
             {({ isActive }) => (
