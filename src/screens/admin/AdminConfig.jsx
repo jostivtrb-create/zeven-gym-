@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGym } from '../../context/ThemeContext'
+import { actualizarGymCampos } from '../../services/db'
 
 const seccion = { fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-3)' }
 const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }
@@ -13,11 +14,11 @@ function Toggle({ activo, onClick }) {
   )
 }
 
-function FilaEditable({ etiqueta, valor, onChange }) {
+function Fila({ etiqueta, valor, onChange, placeholder }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '9px 0', fontSize: 12.5 }}>
       <span style={{ color: 'var(--text-2)', flex: 'none' }}>{etiqueta}</span>
-      <input value={valor} onChange={(e) => onChange(e.target.value)} style={{ fontWeight: 500, fontSize: 12.5, textAlign: 'right', border: 'none', outline: 'none', background: 'transparent', flex: 1, minWidth: 0, fontFamily: 'inherit' }} />
+      <input value={valor} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ fontWeight: 500, fontSize: 12.5, textAlign: 'right', border: 'none', outline: 'none', background: 'transparent', flex: 1, minWidth: 0, fontFamily: 'inherit' }} />
     </div>
   )
 }
@@ -25,18 +26,37 @@ function FilaEditable({ etiqueta, valor, onChange }) {
 export default function AdminConfig() {
   const navigate = useNavigate()
   const { gym, setGym } = useGym()
-  const [politicas, setPoliticas] = useState(gym.politicas)
-  const [contacto, setContacto] = useState({ celular: gym.contacto.celular, instagram: gym.contacto.instagram, direccion: gym.contacto.direccion })
+  const [politicas, setPoliticas] = useState({ vigencia: 'desde_pago', permitirCongelar: true, bloquearAlVencer: false, ...gym.politicas })
+  const [contacto, setContacto] = useState({ celular: '', instagram: '', direccion: '', ...gym.contacto })
+  const [horarios, setHorarios] = useState(
+    gym.horarios?.length
+      ? gym.horarios
+      : [
+          { dias: 'Lunes a viernes', abre: '', cierra: '' },
+          { dias: 'Sábados', abre: '', cierra: '' },
+          { dias: 'Domingos', abre: '', cierra: '' },
+        ]
+  )
+  const [guardando, setGuardando] = useState(false)
+  const [guardado, setGuardado] = useState(false)
 
-  const guardarPoliticas = (nuevas) => {
-    setPoliticas(nuevas)
-    setGym({ ...gym, politicas: nuevas, contacto: { ...gym.contacto, ...contacto } })
+  const setC = (k) => (v) => { setContacto({ ...contacto, [k]: v }); setGuardado(false) }
+  const setH = (i, k) => (v) => {
+    const nuevos = horarios.map((h, j) => (j === i ? { ...h, [k]: v } : h))
+    setHorarios(nuevos)
+    setGuardado(false)
   }
 
-  const setC = (k) => (v) => {
-    const nuevo = { ...contacto, [k]: v }
-    setContacto(nuevo)
-    setGym({ ...gym, contacto: { ...gym.contacto, ...nuevo }, politicas })
+  const guardar = async () => {
+    setGuardando(true)
+    try {
+      const campos = { contacto, horarios, politicas }
+      await actualizarGymCampos(gym.id, campos)
+      setGym({ ...gym, ...campos })
+      setGuardado(true)
+    } finally {
+      setGuardando(false)
+    }
   }
 
   return (
@@ -48,32 +68,28 @@ export default function AdminConfig() {
       </header>
 
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ position: 'relative', height: 120, borderRadius: 'var(--radius-lg)', background: 'repeating-linear-gradient(45deg,#eef2f0 0 10px,#e5eae7 10px 20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '11px ui-monospace,monospace', color: '#8a938e' }}>
-          foto de portada del gym
-          <button style={{ position: 'absolute', right: 10, bottom: 10, background: '#fff', border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '7px 12px', font: '600 11px Poppins,sans-serif', color: '#565652' }}>
-            Cambiar portada
-          </button>
-        </div>
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={seccion}>Contacto y redes</div>
           <div style={{ ...card, padding: '2px 14px' }}>
-            <div style={{ borderBottom: '1px solid #f2f2f0' }}><FilaEditable etiqueta="Llamadas y WhatsApp" valor={contacto.celular} onChange={setC('celular')} /></div>
-            <div style={{ borderBottom: '1px solid #f2f2f0' }}><FilaEditable etiqueta="Instagram" valor={contacto.instagram} onChange={setC('instagram')} /></div>
-            <FilaEditable etiqueta="Dirección" valor={contacto.direccion} onChange={setC('direccion')} />
+            <div style={{ borderBottom: '1px solid #f2f2f0' }}><Fila etiqueta="Llamadas y WhatsApp" valor={contacto.celular} onChange={setC('celular')} placeholder="300 000 0000" /></div>
+            <div style={{ borderBottom: '1px solid #f2f2f0' }}><Fila etiqueta="Instagram" valor={contacto.instagram} onChange={setC('instagram')} placeholder="@tugym" /></div>
+            <Fila etiqueta="Dirección" valor={contacto.direccion} onChange={setC('direccion')} placeholder="Cra 0 #00-00" />
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={seccion}>Horarios</div>
-          <div style={{ ...card, padding: '6px 14px' }}>
-            {gym.horarios.map((h, i) => (
-              <div key={h.dias} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: i < gym.horarios.length - 1 ? '1px solid #f2f2f0' : 'none', fontSize: 12.5 }}>
-                <span style={{ color: 'var(--text-2)' }}>{h.dias}</span>
-                <span style={{ fontWeight: 500 }}>{h.abre ? `${h.abre} – ${h.cierra}` : 'Cerrado'}</span>
+          <div style={{ ...card, padding: '2px 14px' }}>
+            {horarios.map((h, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 0', borderBottom: i < horarios.length - 1 ? '1px solid #f2f2f0' : 'none', fontSize: 12.5 }}>
+                <input value={h.dias} onChange={(e) => setH(i, 'dias')(e.target.value)} style={{ color: 'var(--text-2)', border: 'none', outline: 'none', background: 'transparent', flex: 1.2, fontFamily: 'inherit', fontSize: 12.5 }} />
+                <input value={h.abre ?? ''} onChange={(e) => setH(i, 'abre')(e.target.value)} placeholder="5:00 am" style={{ fontWeight: 500, textAlign: 'right', border: 'none', outline: 'none', background: 'transparent', flex: 0.8, fontFamily: 'inherit', fontSize: 12.5 }} />
+                <span style={{ color: 'var(--text-4)' }}>–</span>
+                <input value={h.cierra ?? ''} onChange={(e) => setH(i, 'cierra')(e.target.value)} placeholder="10:00 pm" style={{ fontWeight: 500, border: 'none', outline: 'none', background: 'transparent', flex: 0.8, fontFamily: 'inherit', fontSize: 12.5 }} />
               </div>
             ))}
           </div>
+          <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>Deja las horas vacías para mostrar "Cerrado".</div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -83,31 +99,42 @@ export default function AdminConfig() {
               <div style={{ fontSize: 12.5, fontWeight: 600 }}>Vigencia de la membresía</div>
               <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                 {[
-                  ['desde_pago', '30 días desde el pago'],
+                  ['desde_pago', 'Días desde el pago'],
                   ['corte_fijo', 'Corte fijo del mes'],
                 ].map(([valor, texto]) => (
-                  <button key={valor} onClick={() => guardarPoliticas({ ...politicas, vigencia: valor })} style={{ fontSize: 11, fontWeight: politicas.vigencia === valor ? 600 : 500, color: politicas.vigencia === valor ? '#fff' : '#565652', background: politicas.vigencia === valor ? 'var(--gym-color)' : 'var(--surface-2)', border: politicas.vigencia === valor ? 'none' : '1px solid var(--border)', borderRadius: 99, padding: '6px 12px' }}>
+                  <button key={valor} onClick={() => { setPoliticas({ ...politicas, vigencia: valor }); setGuardado(false) }} style={{ fontSize: 11, fontWeight: politicas.vigencia === valor ? 600 : 500, color: politicas.vigencia === valor ? '#fff' : '#565652', background: politicas.vigencia === valor ? 'var(--gym-color)' : 'var(--surface-2)', border: politicas.vigencia === valor ? 'none' : '1px solid var(--border)', borderRadius: 99, padding: '6px 12px' }}>
                     {texto}
                   </button>
                 ))}
               </div>
+              {politicas.vigencia === 'corte_fijo' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 12 }}>
+                  <span style={{ color: 'var(--text-2)' }}>Día de corte:</span>
+                  <input type="number" min="1" max="28" value={politicas.diaCorte ?? ''} onChange={(e) => { setPoliticas({ ...politicas, diaCorte: Number(e.target.value) || null }); setGuardado(false) }} placeholder="1" style={{ width: 52, border: '1px solid var(--border)', borderRadius: 8, padding: '6px 8px', fontSize: 12.5, fontWeight: 600, outline: 'none', textAlign: 'center' }} />
+                  <span style={{ color: 'var(--text-3)', fontSize: 11 }}>de cada mes</span>
+                </div>
+              )}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ fontSize: 12.5, fontWeight: 600 }}>Permitir congelar membresías</div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Pausar días sin perder lo pagado</div>
               </div>
-              <Toggle activo={politicas.permitirCongelar} onClick={() => guardarPoliticas({ ...politicas, permitirCongelar: !politicas.permitirCongelar })} />
+              <Toggle activo={politicas.permitirCongelar} onClick={() => { setPoliticas({ ...politicas, permitirCongelar: !politicas.permitirCongelar }); setGuardado(false) }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ fontSize: 12.5, fontWeight: 600 }}>Bloquear rutina al vencer</div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Si está apagado, solo se muestra un aviso</div>
               </div>
-              <Toggle activo={politicas.bloquearAlVencer} onClick={() => guardarPoliticas({ ...politicas, bloquearAlVencer: !politicas.bloquearAlVencer })} />
+              <Toggle activo={politicas.bloquearAlVencer} onClick={() => { setPoliticas({ ...politicas, bloquearAlVencer: !politicas.bloquearAlVencer }); setGuardado(false) }} />
             </div>
           </div>
         </div>
+
+        <button onClick={guardar} disabled={guardando} style={{ background: guardado ? '#166534' : 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-md)', padding: '13px 0', textAlign: 'center', fontSize: 13.5, fontWeight: 600, opacity: guardando ? 0.7 : 1 }}>
+          {guardando ? 'Guardando…' : guardado ? '✓ Cambios guardados' : 'Guardar cambios'}
+        </button>
       </div>
     </>
   )

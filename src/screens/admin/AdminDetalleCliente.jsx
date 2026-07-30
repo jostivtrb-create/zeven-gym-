@@ -1,52 +1,120 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { demoClientes, ESTADOS, pesos } from '../../data/demoAdmin'
-import { iniciales } from './AdminClientes'
+import { useGym } from '../../context/ThemeContext'
+import { useAuth } from '../../context/AuthContext'
+import { obtenerCliente, listarPlanes, listarPagosCliente, listarRutinas, registrarPago, congelarMembresia, actualizarUsuario, eliminarCliente, asignarRutina } from '../../services/db'
+import { ESTADOS, iniciales } from './AdminClientes'
 
 const seccionTitulo = { fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-3)' }
 const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }
+const pesos = (n) => '$' + Number(n).toLocaleString('es-CO')
 const FECHA = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })
-
-const demoPagosCliente = [
-  { fecha: '11 jul 2026', detalle: 'Plan Quincena · efectivo', monto: 40000 },
-  { fecha: '26 jun 2026', detalle: 'Plan Quincena · Nequi', monto: 40000 },
-]
+const FECHA_CORTA = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
 
 export default function AdminDetalleCliente() {
   const { uid } = useParams()
   const navigate = useNavigate()
-  const base = demoClientes.find((c) => c.uid === uid) ?? demoClientes[0]
-  const [cliente, setCliente] = useState(base)
+  const { gym } = useGym()
+  const { usuario } = useAuth()
+  const [cliente, setCliente] = useState(null)
+  const [planes, setPlanes] = useState([])
+  const [pagos, setPagos] = useState([])
+  const [rutinas, setRutinas] = useState([])
+  const [eligiendoPlan, setEligiendoPlan] = useState(false)
+  const [eligiendoRutina, setEligiendoRutina] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
   const [nombreConfirm, setNombreConfirm] = useState('')
-  const est = ESTADOS[cliente.estado]
+  const [ocupado, setOcupado] = useState(false)
 
-  const duracion = cliente.plan === 'Plan Quincena' ? 15 : cliente.plan === 'Plan Día' ? 1 : 30
+  const cargar = async () => {
+    if (!gym.id) return
+    const [c, pl, pg, rt] = await Promise.all([
+      obtenerCliente(gym.id, uid),
+      listarPlanes(gym.id),
+      listarPagosCliente(gym.id, uid),
+      listarRutinas(gym.id),
+    ])
+    setCliente(c ?? 'no-existe')
+    setPlanes(pl)
+    setPagos(pg)
+    setRutinas(rt)
+  }
+  useEffect(() => { cargar() }, [gym.id, uid])
 
-  const registrarPago = () => {
-    // Fase 5a: crea doc en pagos/ y recalcula vence según la política del gym
-    const base = new Date() > new Date(cliente.vence + 'T00:00:00') ? new Date() : new Date(cliente.vence + 'T00:00:00')
-    base.setDate(base.getDate() + duracion)
-    setCliente({ ...cliente, estado: 'activo', vence: base.toISOString().slice(0, 10) })
+  if (cliente === null) return <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-3)', fontSize: 12.5 }}>Cargando cliente…</div>
+  if (cliente === 'no-existe')
+    return (
+      <div style={{ textAlign: 'center', padding: '80px 24px' }}>
+        <div style={{ fontSize: 14, fontWeight: 600 }}>Este cliente ya no existe</div>
+        <button onClick={() => navigate('/admin/clientes')} style={{ marginTop: 12, fontSize: 12.5, fontWeight: 600, color: 'var(--gym-color)' }}>‹ Volver a clientes</button>
+      </div>
+    )
+
+  const est = ESTADOS[cliente.estadoDerivado]
+  const m = cliente.membresia
+  const vence = m?.vence?.toDate?.()
+  const rutinaActual = rutinas.find((r) => r.id === cliente.rutinaId)
+
+  const cobrar = async (plan) => {
+    setOcupado(true)
+    try {
+      await registrarPago(gym, uid, plan, usuario?.uid ?? null)
+      setEligiendoPlan(false)
+      await cargar()
+    } finally {
+      setOcupado(false)
+    }
   }
 
-  const congelar = () => setCliente({ ...cliente, estado: cliente.estado === 'congelado' ? 'activo' : 'congelado', congeladoDesde: 'hoy' })
-  const desactivar = () => setCliente({ ...cliente, estado: cliente.estado === 'desactivado' ? 'activo' : 'desactivado', desactivadoEn: 'hoy' })
+  const congelar = async () => {
+    setOcupado(true)
+    try {
+      await congelarMembresia(gym.id, uid, cliente.estadoDerivado !== 'congelado')
+      await cargar()
+    } finally {
+      setOcupado(false)
+    }
+  }
 
-  const eliminar = () => {
-    if (nombreConfirm.trim().toLowerCase() !== cliente.nombre.toLowerCase()) return
-    navigate('/admin/clientes')
+  const desactivar = async () => {
+    setOcupado(true)
+    try {
+      await actualizarUsuario(uid, { estado: cliente.estado === 'desactivado' ? 'activo' : 'desactivado' })
+      await cargar()
+    } finally {
+      setOcupado(false)
+    }
+  }
+
+  const asignar = async (rutinaId) => {
+    setOcupado(true)
+    try {
+      await asignarRutina(uid, rutinaId)
+      setEligiendoRutina(false)
+      await cargar()
+    } finally {
+      setOcupado(false)
+    }
+  }
+
+  const eliminar = async () => {
+    if (nombreConfirm.trim().toLowerCase() !== (cliente.nombre ?? '').toLowerCase()) return
+    setOcupado(true)
+    try {
+      await eliminarCliente(gym.id, uid)
+      navigate('/admin/clientes')
+    } finally {
+      setOcupado(false)
+    }
   }
 
   return (
     <>
       <header style={{ background: 'var(--gym-color)', padding: '62px 20px 20px', borderRadius: '0 0 var(--radius-header) var(--radius-header)' }}>
-        <button onClick={() => navigate('/admin/clientes')} style={{ color: 'rgba(255,255,255,.8)', fontSize: 12 }}>
-          ‹ Clientes
-        </button>
+        <button onClick={() => navigate('/admin/clientes')} style={{ color: 'rgba(255,255,255,.8)', fontSize: 12 }}>‹ Clientes</button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 12 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 99, background: '#fff', color: 'var(--gym-color)', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {iniciales(cliente.nombre)}
+          <div style={{ width: 56, height: 56, borderRadius: 99, background: '#fff', color: 'var(--gym-color)', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            {cliente.fotoUrl ? <img src={cliente.fotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : iniciales(cliente.nombre)}
           </div>
           <div>
             <div style={{ color: '#fff', fontSize: 18, fontWeight: 600 }}>{cliente.nombre}</div>
@@ -56,26 +124,50 @@ export default function AdminDetalleCliente() {
       </header>
 
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {cliente.plan && (
-          <div style={{ ...card, borderRadius: 'var(--radius-lg)', padding: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{cliente.plan}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gym-color)' }}>{pesos(cliente.precio)}</div>
+        <div style={{ ...card, borderRadius: 'var(--radius-lg)', padding: 16 }}>
+          {m ? (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{m.planNombre}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gym-color)' }}>{pesos(m.precio)}</div>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 3 }}>
+                {cliente.estadoDerivado === 'vencido' ? 'Venció' : 'Vence'} el {vence ? FECHA.format(vence) : '—'}
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Sin plan activo. Regístrale su primer pago:</div>
+          )}
+
+          {eligiendoPlan ? (
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {planes.length === 0 && (
+                <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                  Primero crea un plan en <b>Más → Planes del gym</b>.
+                </div>
+              )}
+              {planes.map((p) => (
+                <button key={p.id} onClick={() => cobrar(p)} disabled={ocupado} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '11px 14px', background: 'var(--surface-2)', fontSize: 13 }}>
+                  <span style={{ fontWeight: 600 }}>{p.nombre} · {p.duracionDias} días</span>
+                  <span style={{ fontWeight: 700, color: 'var(--gym-color)' }}>{pesos(p.precio)}</span>
+                </button>
+              ))}
+              <button onClick={() => setEligiendoPlan(false)} style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', padding: '6px 0' }}>Cancelar</button>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 3 }}>
-              {cliente.estado === 'vencido' ? 'Venció' : 'Vence'} el {FECHA.format(new Date(cliente.vence + 'T00:00:00'))}
-            </div>
-            <button onClick={registrarPago} style={{ marginTop: 12, width: '100%', background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 0', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>
-              Registrar pago y renovar {duracion} día{duracion === 1 ? '' : 's'}
+          ) : (
+            <button onClick={() => setEligiendoPlan(true)} disabled={ocupado} style={{ marginTop: 12, width: '100%', background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 0', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>
+              {ocupado ? 'Guardando…' : m ? `Registrar pago y renovar` : 'Registrar primer pago'}
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={congelar} style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius)', padding: '11px 0', fontSize: 12, fontWeight: 600, color: '#475569' }}>
-            {cliente.estado === 'congelado' ? 'Descongelar' : 'Congelar'}
-          </button>
-          <button onClick={desactivar} style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius)', padding: '11px 0', fontSize: 12, fontWeight: 600, color: '#475569' }}>
+          {gym.politicas?.permitirCongelar && m && (
+            <button onClick={congelar} disabled={ocupado} style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius)', padding: '11px 0', fontSize: 12, fontWeight: 600, color: '#475569' }}>
+              {cliente.estadoDerivado === 'congelado' ? 'Descongelar' : 'Congelar'}
+            </button>
+          )}
+          <button onClick={desactivar} disabled={ocupado} style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius)', padding: '11px 0', fontSize: 12, fontWeight: 600, color: '#475569' }}>
             {cliente.estado === 'desactivado' ? 'Reactivar' : 'Desactivar'}
           </button>
         </div>
@@ -87,10 +179,11 @@ export default function AdminDetalleCliente() {
               ['Celular', cliente.celular],
               ['Documento', cliente.documento],
               ['Nacimiento', cliente.nacimiento],
-            ].map(([k, v], i, arr) => (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: i < arr.length - 1 ? '1px solid #f2f2f0' : 'none', fontSize: 12.5 }}>
-                <span style={{ color: 'var(--text-2)' }}>{k}</span>
-                <span style={{ fontWeight: 500 }}>{v}</span>
+              ['Correo', cliente.correo],
+            ].filter(([, v]) => v).map(([k, v], i, arr) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '9px 0', borderBottom: i < arr.length - 1 ? '1px solid #f2f2f0' : 'none', fontSize: 12.5 }}>
+                <span style={{ color: 'var(--text-2)', flex: 'none' }}>{k}</span>
+                <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v}</span>
               </div>
             ))}
           </div>
@@ -98,50 +191,60 @@ export default function AdminDetalleCliente() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={seccionTitulo}>Rutina asignada</div>
-          <div style={{ ...card, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>{cliente.rutina ?? 'Sin rutina asignada'}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{cliente.rutina ? '3 días por semana · plantilla Zeven' : 'Asígnale una desde Rutinas'}</div>
-            </div>
-            <button onClick={() => navigate('/admin/rutinas')} style={{ fontSize: 12, fontWeight: 600, color: 'var(--gym-color)' }}>
-              {cliente.rutina ? 'Cambiar' : 'Asignar'}
-            </button>
+          <div style={{ ...card, padding: 14 }}>
+            {eligiendoRutina ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {rutinas.length === 0 && (
+                  <div style={{ fontSize: 12, color: 'var(--text-2)' }}>Aún no tienes rutinas. Créala en la pestaña <b>Rutinas</b>.</div>
+                )}
+                {rutinas.map((r) => (
+                  <button key={r.id} onClick={() => asignar(r.id)} disabled={ocupado} style={{ textAlign: 'left', border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '11px 14px', background: r.id === cliente.rutinaId ? 'color-mix(in oklab, var(--gym-color) 8%, white)' : 'var(--surface-2)', fontSize: 13, fontWeight: 600 }}>
+                    {r.nombre}
+                  </button>
+                ))}
+                <button onClick={() => setEligiendoRutina(false)} style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', padding: '6px 0' }}>Cancelar</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{rutinaActual?.nombre ?? 'Sin rutina asignada'}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                    {rutinaActual ? `${Object.values(rutinaActual.dias ?? {}).filter(Boolean).length} días por semana` : 'Asígnale una para que la vea en su app'}
+                  </div>
+                </div>
+                <button onClick={() => setEligiendoRutina(true)} style={{ fontSize: 12, fontWeight: 600, color: 'var(--gym-color)' }}>
+                  {rutinaActual ? 'Cambiar' : 'Asignar'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={seccionTitulo}>Historial de pagos</div>
-          <div style={{ ...card, padding: '6px 14px' }}>
-            {demoPagosCliente.map((p, i) => (
-              <div key={p.fecha} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < demoPagosCliente.length - 1 ? '1px solid #f2f2f0' : 'none' }}>
-                <div>
-                  <div style={{ fontSize: 12.5, fontWeight: 500 }}>{p.fecha}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{p.detalle}</div>
+        {pagos.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={seccionTitulo}>Historial de pagos</div>
+            <div style={{ ...card, padding: '6px 14px' }}>
+              {pagos.map((p, i) => (
+                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < pagos.length - 1 ? '1px solid #f2f2f0' : 'none' }}>
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 500 }}>{p.fecha?.toDate ? FECHA_CORTA.format(p.fecha.toDate()) : '—'}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{p.planNombre}</div>
+                  </div>
+                  <span style={{ fontSize: 12.5, fontWeight: 600 }}>{pesos(p.monto)}</span>
                 </div>
-                <span style={{ fontSize: 12.5, fontWeight: 600 }}>{pesos(p.monto)}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {confirmando ? (
           <div style={{ ...card, border: '1px solid #f3d5d5', padding: 14 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--danger)' }}>Escribe "{cliente.nombre}" para confirmar</div>
-            <input
-              value={nombreConfirm}
-              onChange={(e) => setNombreConfirm(e.target.value)}
-              placeholder={cliente.nombre}
-              style={{ marginTop: 10, width: '100%', border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
-            />
+            <input value={nombreConfirm} onChange={(e) => setNombreConfirm(e.target.value)} placeholder={cliente.nombre} style={{ marginTop: 10, width: '100%', border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
             <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-              <button onClick={() => setConfirmando(false)} style={{ flex: 1, border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '10px 0', fontSize: 12.5, fontWeight: 600, background: 'var(--surface)' }}>
-                Cancelar
-              </button>
-              <button
-                onClick={eliminar}
-                style={{ flex: 1, borderRadius: 'var(--radius-sm)', padding: '10px 0', fontSize: 12.5, fontWeight: 600, background: nombreConfirm.trim().toLowerCase() === cliente.nombre.toLowerCase() ? 'var(--danger)' : '#f3d5d5', color: '#fff' }}
-              >
-                Eliminar
+              <button onClick={() => setConfirmando(false)} style={{ flex: 1, border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '10px 0', fontSize: 12.5, fontWeight: 600, background: 'var(--surface)' }}>Cancelar</button>
+              <button onClick={eliminar} disabled={ocupado} style={{ flex: 1, borderRadius: 'var(--radius-sm)', padding: '10px 0', fontSize: 12.5, fontWeight: 600, background: nombreConfirm.trim().toLowerCase() === (cliente.nombre ?? '').toLowerCase() ? 'var(--danger)' : '#f3d5d5', color: '#fff' }}>
+                {ocupado ? 'Eliminando…' : 'Eliminar'}
               </button>
             </div>
           </div>

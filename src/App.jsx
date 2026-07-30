@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider } from './context/AuthContext'
+import RutaProtegida from './components/RutaProtegida'
 import ClienteShell from './screens/cliente/ClienteShell'
 import Portada from './screens/cliente/Portada'
 import Rutina from './screens/cliente/Rutina'
@@ -38,14 +39,14 @@ export default function App() {
           <Route path="/g/:codigo" element={<Bienvenida />} />
           <Route path="/registro" element={<Registro />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/app" element={<ClienteShell />}>
+          <Route path="/app" element={<RutaProtegida rol="cliente"><ClienteShell /></RutaProtegida>}>
             <Route index element={<Portada />} />
             <Route path="rutina" element={<Rutina />} />
             <Route path="progreso" element={<Progreso />} />
             <Route path="calcular" element={<Calculadoras />} />
             <Route path="perfil" element={<Perfil />} />
           </Route>
-          <Route path="/admin" element={<AdminShell />}>
+          <Route path="/admin" element={<RutaProtegida rol="admin"><AdminShell /></RutaProtegida>}>
             <Route index element={<AdminDashboard />} />
             <Route path="clientes" element={<AdminClientes />} />
             <Route path="clientes/:uid" element={<AdminDetalleCliente />} />
@@ -57,7 +58,7 @@ export default function App() {
             <Route path="config" element={<AdminConfig />} />
             <Route path="mas" element={<AdminMas />} />
           </Route>
-          <Route path="/super" element={<SuperShell />}>
+          <Route path="/super" element={<RutaProtegida rol="superadmin"><SuperShell /></RutaProtegida>}>
             <Route index element={<SuperDashboard />} />
             <Route path="gimnasios" element={<SuperGimnasios />} />
             <Route path="gimnasios/crear" element={<SuperCrearGym />} />

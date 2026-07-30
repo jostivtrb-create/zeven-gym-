@@ -1,7 +1,6 @@
-import { collection, doc, getDoc, getDocs, query, where, limit, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, where, limit, orderBy, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
 import { getCountFromServer } from 'firebase/firestore'
 import { db } from '../firebase'
-import { demoGym } from '../data/demo'
 
 /* Capa de datos de Zeven Gym.
    Si Firestore aún no tiene datos (o falla), cae a los datos demo para que
@@ -16,10 +15,9 @@ export async function buscarGymPorCodigo(codigo) {
       return { id: d.id, ...d.data() }
     }
   } catch (e) {
-    console.warn('buscarGymPorCodigo fallback demo:', e.code ?? e.message)
+    console.warn('buscarGymPorCodigo:', e.code ?? e.message)
   }
-  // Fallback demo mientras no hay datos reales
-  return codigo.toUpperCase() === demoGym.codigo ? demoGym : null
+  return null
 }
 
 export async function obtenerGym(gymId) {
@@ -27,9 +25,9 @@ export async function obtenerGym(gymId) {
     const snap = await getDoc(doc(db, 'gimnasios', gymId))
     if (snap.exists()) return { id: snap.id, ...snap.data() }
   } catch (e) {
-    console.warn('obtenerGym fallback demo:', e.code ?? e.message)
+    console.warn('obtenerGym:', e.code ?? e.message)
   }
-  return demoGym
+  return null
 }
 
 export async function obtenerPerfil(uid) {
@@ -166,4 +164,211 @@ export async function crearGimnasio({ nombre, ciudad, color, admin }) {
     celular: admin.celular ?? '',
   })
   return { id: ref.id, codigo }
+}
+
+/* ============ PLANES ============ */
+export async function listarPlanes(gymId) {
+  const snap = await getDocs(collection(db, 'gimnasios', gymId, 'planes'))
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.duracionDias - a.duracionDias)
+}
+export async function guardarPlan(gymId, plan) {
+  if (plan.id) {
+    const { id, ...datos } = plan
+    await updateDoc(doc(db, 'gimnasios', gymId, 'planes', id), datos)
+    return id
+  }
+  const ref = await addDoc(collection(db, 'gimnasios', gymId, 'planes'), { ...plan, activo: true, creadoEl: serverTimestamp() })
+  return ref.id
+}
+
+/* ============ CLIENTES + MEMBRESÍAS ============ */
+export function estadoCliente(usuario, membresia) {
+  if (usuario.estado === 'desactivado') return 'desactivado'
+  if (!membresia) return 'sin_plan'
+  if (membresia.estado === 'congelada') return 'congelado'
+  const vence = membresia.vence?.toDate ? membresia.vence.toDate() : null
+  if (!vence) return 'sin_plan'
+  const hoy = new Date(new Date().toDateString())
+  const dias = Math.round((vence - hoy) / DIA_MS)
+  if (dias < 0) return 'vencido'
+  if (dias <= 3) return 'por_vencer'
+  return 'activo'
+}
+
+export async function listarClientes(gymId) {
+  const [usuariosSnap, membresiasSnap] = await Promise.all([
+    getDocs(query(collection(db, 'usuarios'), where('gymId', '==', gymId), where('rol', '==', 'cliente'))),
+    getDocs(collection(db, 'gimnasios', gymId, 'membresias')),
+  ])
+  const membresias = Object.fromEntries(membresiasSnap.docs.map((d) => [d.id, d.data()]))
+  return usuariosSnap.docs.map((d) => {
+    const u = { uid: d.id, ...d.data() }
+    const m = membresias[d.id] ?? null
+    return { ...u, membresia: m, estadoDerivado: estadoCliente(u, m) }
+  })
+}
+
+export async function obtenerCliente(gymId, uid) {
+  const [uSnap, mSnap] = await Promise.all([
+    getDoc(doc(db, 'usuarios', uid)),
+    getDoc(doc(db, 'gimnasios', gymId, 'membresias', uid)),
+  ])
+  if (!uSnap.exists()) return null
+  const u = { uid, ...uSnap.data() }
+  const m = mSnap.exists() ? mSnap.data() : null
+  return { ...u, membresia: m, estadoDerivado: estadoCliente(u, m) }
+}
+
+/* Registra un pago y renueva la vigencia según la política del gym. */
+export async function registrarPago(gym, uid, plan, registradoPor) {
+  const mRef = doc(db, 'gimnasios', gym.id, 'membresias', uid)
+  const mSnap = await getDoc(mRef)
+  const hoy = new Date()
+  let base = hoy
+  if (mSnap.exists()) {
+    const vence = mSnap.data().vence?.toDate?.()
+    if (vence && vence > hoy) base = vence
+  }
+  let nuevoVence
+  if (gym.politicas?.vigencia === 'corte_fijo' && gym.politicas?.diaCorte) {
+    const corte = new Date(hoy.getFullYear(), hoy.getMonth() + 1, gym.politicas.diaCorte)
+    nuevoVence = corte
+  } else {
+    nuevoVence = new Date(base.getTime() + plan.duracionDias * DIA_MS)
+  }
+  await setDoc(mRef, {
+    planId: plan.id,
+    planNombre: plan.nombre,
+    precio: plan.precio,
+    duracionDias: plan.duracionDias,
+    estado: 'activa',
+    inicio: mSnap.exists() ? mSnap.data().inicio : Timestamp.now(),
+    vence: Timestamp.fromDate(nuevoVence),
+  })
+  await addDoc(collection(db, 'gimnasios', gym.id, 'pagos'), {
+    uid,
+    planId: plan.id,
+    planNombre: plan.nombre,
+    monto: plan.precio,
+    metodo: 'manual',
+    fecha: Timestamp.now(),
+    registradoPor: registradoPor ?? null,
+  })
+  return nuevoVence
+}
+
+export async function congelarMembresia(gymId, uid, congelar) {
+  const mRef = doc(db, 'gimnasios', gymId, 'membresias', uid)
+  const mSnap = await getDoc(mRef)
+  if (!mSnap.exists()) return
+  const m = mSnap.data()
+  if (congelar) {
+    const vence = m.vence?.toDate?.() ?? new Date()
+    const restantes = Math.max(0, Math.round((vence - new Date()) / DIA_MS))
+    await updateDoc(mRef, { estado: 'congelada', congeladaEl: Timestamp.now(), diasRestantes: restantes })
+  } else {
+    const nuevoVence = new Date(Date.now() + (m.diasRestantes ?? 0) * DIA_MS)
+    await updateDoc(mRef, { estado: 'activa', congeladaEl: null, diasRestantes: null, vence: Timestamp.fromDate(nuevoVence) })
+  }
+}
+
+export async function actualizarUsuario(uid, campos) {
+  await updateDoc(doc(db, 'usuarios', uid), campos)
+}
+export async function eliminarCliente(gymId, uid) {
+  await deleteDoc(doc(db, 'gimnasios', gymId, 'membresias', uid)).catch(() => {})
+  await deleteDoc(doc(db, 'usuarios', uid))
+}
+
+/* ============ PAGOS ============ */
+export async function listarPagosGym(gymId) {
+  const snap = await getDocs(query(collection(db, 'gimnasios', gymId, 'pagos'), orderBy('fecha', 'desc'), limit(200)))
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+export async function listarPagosCliente(gymId, uid) {
+  const snap = await getDocs(query(collection(db, 'gimnasios', gymId, 'pagos'), where('uid', '==', uid)))
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.fecha?.seconds ?? 0) - (a.fecha?.seconds ?? 0))
+}
+
+/* ============ COMUNICADOS ============ */
+export async function listarComunicados(gymId) {
+  const snap = await getDocs(query(collection(db, 'gimnasios', gymId, 'comunicados'), orderBy('creadoEl', 'desc'), limit(20)))
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+export async function crearComunicado(gymId, { titulo, texto }) {
+  await addDoc(collection(db, 'gimnasios', gymId, 'comunicados'), { titulo, texto, creadoEl: serverTimestamp() })
+}
+export async function eliminarComunicado(gymId, id) {
+  await deleteDoc(doc(db, 'gimnasios', gymId, 'comunicados', id))
+}
+
+/* ============ CONFIG DEL GYM ============ */
+export async function actualizarGymCampos(gymId, campos) {
+  await updateDoc(doc(db, 'gimnasios', gymId), campos)
+}
+
+/* ============ RUTINAS ============ */
+export async function listarRutinas(gymId) {
+  const snap = await getDocs(collection(db, 'gimnasios', gymId, 'rutinas'))
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+export async function obtenerRutina(gymId, rutinaId) {
+  const snap = await getDoc(doc(db, 'gimnasios', gymId, 'rutinas', rutinaId))
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null
+}
+export async function guardarRutina(gymId, rutina) {
+  if (rutina.id) {
+    const { id, ...datos } = rutina
+    await updateDoc(doc(db, 'gimnasios', gymId, 'rutinas', id), datos)
+    return id
+  }
+  const ref = await addDoc(collection(db, 'gimnasios', gymId, 'rutinas'), { ...rutina, creadoEl: serverTimestamp() })
+  return ref.id
+}
+export async function asignarRutina(uid, rutinaId) {
+  await updateDoc(doc(db, 'usuarios', uid), { rutinaId })
+}
+
+/* ============ PROGRESO DEL CLIENTE (privado) ============ */
+const hoyISO = () => new Date().toISOString().slice(0, 10)
+
+export async function guardarSesionHoy(uid, datos) {
+  // datos: { ejercicios: { [ejId]: { hecho, peso } }, dia }
+  await setDoc(doc(db, 'usuarios', uid, 'progreso', `sesion-${hoyISO()}`), {
+    tipo: 'sesion',
+    fecha: hoyISO(),
+    ...datos,
+  }, { merge: true })
+}
+export async function guardarMedidasHoy(uid, medidas) {
+  await setDoc(doc(db, 'usuarios', uid, 'progreso', `medidas-${hoyISO()}`), {
+    tipo: 'medidas',
+    fecha: hoyISO(),
+    ...medidas,
+  })
+}
+export async function listarProgreso(uid) {
+  const snap = await getDocs(collection(db, 'usuarios', uid, 'progreso'))
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => (a.fecha < b.fecha ? -1 : 1))
+}
+
+/* Racha: días consecutivos (hasta hoy o ayer) con sesión registrada. */
+export function calcularRacha(progreso) {
+  const dias = new Set(progreso.filter((p) => p.tipo === 'sesion').map((p) => p.fecha))
+  let racha = 0
+  const cursor = new Date()
+  if (!dias.has(cursor.toISOString().slice(0, 10))) cursor.setDate(cursor.getDate() - 1)
+  while (dias.has(cursor.toISOString().slice(0, 10))) {
+    racha++
+    cursor.setDate(cursor.getDate() - 1)
+  }
+  let mejor = 0, actual = 0, previa = null
+  for (const f of [...dias].sort()) {
+    actual = previa && (new Date(f) - new Date(previa)) === DIA_MS ? actual + 1 : 1
+    mejor = Math.max(mejor, actual)
+    previa = f
+  }
+  return { actual: racha, mejor, entrenos: dias.size }
 }
