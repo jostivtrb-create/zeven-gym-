@@ -1,0 +1,110 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function autenticado() {
+      return request.auth != null;
+    }
+    function miPerfil() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+    function esSuperadmin() {
+      return autenticado() && miPerfil().rol == 'superadmin';
+    }
+    function esAdminDe(gymId) {
+      return autenticado() && miPerfil().rol == 'admin' && miPerfil().gymId == gymId;
+    }
+    function esMiembroDe(gymId) {
+      return autenticado() && miPerfil().gymId == gymId;
+    }
+
+    match /usuarios/{uid} {
+      // Cada quien lee su perfil; el admin de su gym y el superadmin también
+      allow read: if autenticado() && (request.auth.uid == uid || esSuperadmin()
+        || (miPerfil().rol == 'admin' && resource.data.gymId == miPerfil().gymId));
+      // Un usuario nuevo crea SU perfil:
+      // - como cliente (registro normal)
+      // - como superadmin SOLO si es el correo dueño de la plataforma
+      // - como admin SOLO si su correo fue pre-invitado por el superadmin
+      allow create: if autenticado() && request.auth.uid == uid
+        && (
+          request.resource.data.rol == 'cliente'
+          || (request.resource.data.rol == 'superadmin'
+              && request.auth.token.email == 'jostivtrb@gmail.com')
+          || (request.resource.data.rol == 'admin'
+              && exists(/databases/$(database)/documents/adminsPendientes/$(request.auth.token.email))
+              && request.resource.data.gymId ==
+                 get(/databases/$(database)/documents/adminsPendientes/$(request.auth.token.email)).data.gymId)
+        );
+      // Editar: el dueño (sin cambiar rol ni gym), su admin, o el superadmin
+      allow update: if esSuperadmin()
+        || (autenticado() && request.auth.uid == uid
+            && request.resource.data.rol == resource.data.rol
+            && request.resource.data.gymId == resource.data.gymId)
+        || (miPerfil().rol == 'admin' && resource.data.gymId == miPerfil().gymId
+            && request.resource.data.rol == 'cliente');
+      allow delete: if esSuperadmin()
+        || (miPerfil().rol == 'admin' && resource.data.gymId == miPerfil().gymId
+            && resource.data.rol == 'cliente');
+
+      match /progreso/{registroId} {
+        // PRIVADO: solo el dueño (definido en Etapa 10)
+        allow read, write: if autenticado() && request.auth.uid == uid;
+      }
+      match /logros/{logroId} {
+        allow read, write: if autenticado() && request.auth.uid == uid;
+      }
+    }
+
+    match /gimnasios/{gymId} {
+      // Lectura pública: la pantalla de entrada busca el gym por código antes del login
+      allow read: if true;
+      allow create, delete: if esSuperadmin();
+      // El superadmin edita todo; el admin edita su gym pero NUNCA branding/suscripcion/codigo
+      allow update: if esSuperadmin()
+        || (esAdminDe(gymId)
+            && request.resource.data.branding == resource.data.branding
+            && request.resource.data.suscripcion == resource.data.suscripcion
+            && request.resource.data.codigo == resource.data.codigo
+            && request.resource.data.adminUid == resource.data.adminUid);
+
+      match /planes/{planId} {
+        allow read: if esMiembroDe(gymId) || esSuperadmin();
+        allow write: if esAdminDe(gymId) || esSuperadmin();
+      }
+      match /membresias/{uid} {
+        allow read: if esSuperadmin() || esAdminDe(gymId)
+          || (autenticado() && request.auth.uid == uid);
+        allow write: if esAdminDe(gymId) || esSuperadmin();
+      }
+      match /pagos/{pagoId} {
+        allow read: if esSuperadmin() || esAdminDe(gymId)
+          || (autenticado() && resource.data.uid == request.auth.uid);
+        allow write: if esAdminDe(gymId) || esSuperadmin();
+      }
+      match /rutinas/{rutinaId} {
+        allow read: if esMiembroDe(gymId) || esSuperadmin();
+        allow write: if esAdminDe(gymId) || esSuperadmin();
+      }
+      match /comunicados/{comunicadoId} {
+        allow read: if esMiembroDe(gymId) || esSuperadmin();
+        allow write: if esAdminDe(gymId) || esSuperadmin();
+      }
+    }
+
+    match /plantillasRutinas/{plantillaId} {
+      allow read: if autenticado();
+      allow write: if esSuperadmin();
+    }
+
+    match /pagosPlataforma/{pagoId} {
+      allow read, write: if esSuperadmin();
+    }
+
+    match /adminsPendientes/{correo} {
+      // El superadmin invita; el invitado puede leer su propia invitación
+      allow read: if autenticado() && (esSuperadmin() || request.auth.token.email == correo);
+      allow write: if esSuperadmin();
+    }
+  }
+}

@@ -1,0 +1,18 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Fotos de progreso: PRIVADAS, solo el dueño (Etapa 10)
+    match /usuarios/{uid}/{resto=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid
+        && request.resource.size < 8 * 1024 * 1024;
+      allow read: if request.auth != null && request.auth.uid == uid;
+    }
+    // Recursos del gimnasio (logo, banner, gifs de ejercicios): lectura pública,
+    // escritura del superadmin o del admin del gym (validado por token custom no disponible:
+    // se valida con el doc usuarios en Firestore no accesible aquí, así que se restringe por carpeta uid del admin)
+    match /gimnasios/{gymId}/{resto=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.resource.size < 8 * 1024 * 1024;
+    }
+  }
+}

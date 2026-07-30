@@ -9,7 +9,7 @@ import {
   signOut,
 } from 'firebase/auth'
 import { auth, googleProvider } from '../firebase'
-import { obtenerPerfil, obtenerGym } from '../services/db'
+import { obtenerPerfil, obtenerGym, bootstrapPerfil } from '../services/db'
 import { useGym } from './ThemeContext'
 
 const AuthContext = createContext(null)
@@ -26,7 +26,8 @@ export function AuthProvider({ children }) {
     const off = onAuthStateChanged(auth, async (u) => {
       setUsuario(u)
       if (u) {
-        const p = await obtenerPerfil(u.uid)
+        let p = await obtenerPerfil(u.uid)
+        if (!p) p = await bootstrapPerfil(u) // superadmin dueño o admin pre-invitado
         setPerfil(p)
         if (p?.gymId) {
           const gym = await obtenerGym(p.gymId)

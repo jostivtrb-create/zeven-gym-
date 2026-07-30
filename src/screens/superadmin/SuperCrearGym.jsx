@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PALETA_GYMS } from '../../data/demoSuper'
+import { crearGimnasio } from '../../services/db'
 
 const seccion = { fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-3)' }
 const campo = { background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius)', padding: '10px 14px' }
@@ -25,12 +26,30 @@ export default function SuperCrearGym() {
 
   const iniciales = (form.nombre || 'Tu Gym').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
-  const crear = () => {
-    if (!form.nombre.trim() || !form.adminNombre.trim() || !form.adminCorreo.trim()) return
-    // Fase 5a: crea doc gimnasios/ + cuenta admin; el código debe ser único
-    const base = form.nombre.replace(/[^a-zA-Z]/g, '').slice(0, 6).toUpperCase() || 'GYM'
-    const codigo = `${base}${Math.floor(10 + ((form.nombre.length * 7) % 90))}`
-    setCreado({ codigo, link: `zeven-gym.vercel.app/g/${codigo.toLowerCase()}` })
+  const [error, setError] = useState('')
+  const [ocupado, setOcupado] = useState(false)
+
+  const crear = async () => {
+    if (!form.nombre.trim() || !form.adminNombre.trim() || !form.adminCorreo.trim()) {
+      setError('Completa el nombre del gym, el nombre del dueño y su correo.')
+      return
+    }
+    setOcupado(true)
+    setError('')
+    try {
+      const { codigo } = await crearGimnasio({
+        nombre: form.nombre.trim(),
+        ciudad: form.ciudad.trim(),
+        color,
+        admin: { nombre: form.adminNombre.trim(), celular: form.adminCelular.trim(), correo: form.adminCorreo.trim().toLowerCase() },
+      })
+      setCreado({ codigo, link: `zeven-gym.vercel.app/g/${codigo.toLowerCase()}` })
+    } catch (e) {
+      console.warn('crearGimnasio:', e.code ?? e.message)
+      setError('No se pudo guardar en la base de datos. ¿Iniciaste sesión como superadmin?')
+    } finally {
+      setOcupado(false)
+    }
   }
 
   const copiar = (texto, cual) => {
@@ -92,8 +111,9 @@ export default function SuperCrearGym() {
           </div>
         </div>
 
-        <button onClick={crear} style={{ background: 'var(--zeven-dark)', color: '#fff', borderRadius: 'var(--radius-md)', padding: '13px 0', textAlign: 'center', fontSize: 13.5, fontWeight: 600, opacity: creado ? 0.5 : 1 }}>
-          Crear gimnasio y generar acceso
+        {error && <div style={{ fontSize: 11.5, color: 'var(--danger)' }}>{error}</div>}
+        <button onClick={crear} disabled={ocupado || !!creado} style={{ background: 'var(--zeven-dark)', color: '#fff', borderRadius: 'var(--radius-md)', padding: '13px 0', textAlign: 'center', fontSize: 13.5, fontWeight: 600, opacity: creado || ocupado ? 0.5 : 1 }}>
+          {ocupado ? 'Creando…' : 'Crear gimnasio y generar acceso'}
         </button>
 
         {creado && (
