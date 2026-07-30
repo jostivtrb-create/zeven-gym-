@@ -29,6 +29,7 @@ import SuperGimnasios from './screens/superadmin/SuperGimnasios'
 import SuperDetalleGym from './screens/superadmin/SuperDetalleGym'
 import SuperCrearGym from './screens/superadmin/SuperCrearGym'
 import SuperPagos from './screens/superadmin/SuperPagos'
+import SuperCatalogo from './screens/superadmin/SuperCatalogo'
 
 export default function App() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
               <Route path="gimnasios/crear" element={<SuperCrearGym />} />
               <Route path="gimnasios/:id" element={<SuperDetalleGym />} />
               <Route path="pagos" element={<SuperPagos />} />
+              <Route path="catalogo" element={<SuperCatalogo />} />
             </Route>
           </Routes>
         </BrowserRouter>

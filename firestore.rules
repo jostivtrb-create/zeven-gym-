@@ -102,13 +102,20 @@ service cloud.firestore {
         allow read: if esMiembroDe(gymId) || esSuperadmin();
         allow write: if esAdminDe(gymId) || esSuperadmin();
       }
+      match /ejercicios/{ejercicioId} {
+        allow read: if esMiembroDe(gymId) || esSuperadmin();
+        // El superadmin también escribe: al crear el gym le copia el catálogo
+        allow write: if esAdminDe(gymId) || esSuperadmin();
+      }
       match /comunicados/{comunicadoId} {
         allow read: if esMiembroDe(gymId) || esSuperadmin();
         allow write: if esAdminDe(gymId) || esSuperadmin();
       }
     }
 
-    match /plantillasRutinas/{plantillaId} {
+    // Catálogo de ejercicios de la plataforma (con sus infografías).
+    // Lo lee cualquier usuario autenticado; solo el superadmin lo edita.
+    match /catalogoZeven/{ejercicioId} {
       allow read: if autenticado();
       allow write: if esSuperadmin();
     }

@@ -23,6 +23,17 @@ const tabs = [
       </>
     ),
   },
+  {
+    to: '/super/catalogo',
+    label: 'Catálogo',
+    icon: (
+      <>
+        <rect x="3" y="8" width="4" height="8" rx="1" />
+        <rect x="17" y="8" width="4" height="8" rx="1" />
+        <line x1="7" y1="12" x2="17" y2="12" />
+      </>
+    ),
+  },
 ]
 
 export default function SuperShell() {

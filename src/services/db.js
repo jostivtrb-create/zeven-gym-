@@ -1,6 +1,7 @@
-import { collection, doc, getDoc, getDocs, query, where, limit, orderBy, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, where, limit, orderBy, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp, Timestamp, writeBatch } from 'firebase/firestore'
 import { getCountFromServer } from 'firebase/firestore'
 import { db } from '../firebase'
+import { CATALOGO_BASE } from '../data/catalogoBase'
 
 /* Capa de datos de Zeven Gym.
    Si Firestore aún no tiene datos (o falla), cae a los datos demo para que
@@ -165,6 +166,8 @@ export async function crearGimnasio({ nombre, ciudad, color, admin }) {
     nombre: admin.nombre,
     celular: admin.celular ?? '',
   })
+  // El gimnasio nace con el catálogo de ejercicios de Zeven ya cargado
+  await copiarCatalogoAGym(ref.id).catch((e) => console.warn('catálogo:', e.code ?? e.message))
   return { id: ref.id, codigo }
 }
 
@@ -427,3 +430,97 @@ export async function actualizarVencimiento(gymId, uid, fecha) {
 /* Fechas <-> valor de <input type="date"> respetando la zona horaria local. */
 export const aISO = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 export const deISO = (s) => new Date(s + 'T12:00:00')
+
+/* ============ CATÁLOGO GLOBAL DE ZEVEN (superadmin) ============
+   Los ejercicios base y sus infografías viven aquí. Todos los gimnasios los
+   heredan: si el superadmin sube una infografía, aparece en todos al instante. */
+
+export async function listarCatalogoZeven() {
+  const snap = await getDocs(collection(db, 'catalogoZeven'))
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.grupo === b.grupo ? a.nombre.localeCompare(b.nombre) : (a.orden ?? 0) - (b.orden ?? 0)))
+}
+
+export async function sembrarCatalogoBase() {
+  const existentes = await getDocs(collection(db, 'catalogoZeven'))
+  const nombres = new Set(existentes.docs.map((d) => d.data().nombre))
+  const nuevos = CATALOGO_BASE.filter((e) => !nombres.has(e.nombre))
+  if (!nuevos.length) return 0
+  const lote = writeBatch(db)
+  nuevos.forEach((e, i) => {
+    lote.set(doc(collection(db, 'catalogoZeven')), { ...e, imagenUrl: null, orden: i, creadoEl: serverTimestamp() })
+  })
+  await lote.commit()
+  return nuevos.length
+}
+
+export async function guardarEjercicioCatalogo(ejercicio) {
+  const { id, ...datos } = ejercicio
+  if (id) {
+    await updateDoc(doc(db, 'catalogoZeven', id), datos)
+    return id
+  }
+  const ref = await addDoc(collection(db, 'catalogoZeven'), { ...datos, creadoEl: serverTimestamp() })
+  return ref.id
+}
+
+export async function eliminarEjercicioCatalogo(id) {
+  await deleteDoc(doc(db, 'catalogoZeven', id))
+}
+
+/* ============ BIBLIOTECA DE EJERCICIOS DEL GIMNASIO ============
+   Cada gym guarda qué ejercicios tiene. Los que vienen del catálogo solo
+   guardan la referencia: nombre, técnica e infografía se resuelven del
+   catálogo global (así se actualizan solos). */
+
+export async function listarEjerciciosGym(gymId) {
+  const [propiosSnap, catalogo] = await Promise.all([
+    getDocs(collection(db, 'gimnasios', gymId, 'ejercicios')),
+    listarCatalogoZeven().catch(() => []),
+  ])
+  const porId = Object.fromEntries(catalogo.map((c) => [c.id, c]))
+  return propiosSnap.docs
+    .map((d) => {
+      const e = { id: d.id, ...d.data() }
+      const base = e.catalogoId ? porId[e.catalogoId] : null
+      return {
+        ...e,
+        nombre: e.nombre ?? base?.nombre ?? 'Ejercicio',
+        grupo: e.grupo ?? base?.grupo ?? null,
+        nota: e.nota ?? base?.nota ?? '',
+        imagenUrl: e.imagenUrl ?? base?.imagenUrl ?? null,
+      }
+    })
+    .sort((a, b) => a.nombre.localeCompare(b.nombre))
+}
+
+/* Copia el catálogo a un gimnasio nuevo (solo referencias, muy liviano). */
+export async function copiarCatalogoAGym(gymId) {
+  const catalogo = await listarCatalogoZeven()
+  if (!catalogo.length) return 0
+  const lote = writeBatch(db)
+  catalogo.forEach((c) => {
+    lote.set(doc(collection(db, 'gimnasios', gymId, 'ejercicios')), { catalogoId: c.id, creadoEl: serverTimestamp() })
+  })
+  await lote.commit()
+  return catalogo.length
+}
+
+export async function guardarEjercicioGym(gymId, ejercicio) {
+  const { id, ...datos } = ejercicio
+  if (id) {
+    await updateDoc(doc(db, 'gimnasios', gymId, 'ejercicios', id), datos)
+    return id
+  }
+  const ref = await addDoc(collection(db, 'gimnasios', gymId, 'ejercicios'), { ...datos, creadoEl: serverTimestamp() })
+  return ref.id
+}
+
+export async function eliminarEjercicioGym(gymId, id) {
+  await deleteDoc(doc(db, 'gimnasios', gymId, 'ejercicios', id))
+}
+
+export async function eliminarRutina(gymId, id) {
+  await deleteDoc(doc(db, 'gimnasios', gymId, 'rutinas', id))
+}

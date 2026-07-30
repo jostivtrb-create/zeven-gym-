@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGym } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
-import { obtenerRutina, obtenerMembresia, listarProgreso, guardarSesionHoy } from '../../services/db'
+import { obtenerRutina, obtenerMembresia, listarProgreso, guardarSesionHoy, listarEjerciciosGym } from '../../services/db'
 
 const DIAS = [
   { key: 'lun', letra: 'L' }, { key: 'mar', letra: 'M' }, { key: 'mie', letra: 'X' },
@@ -30,6 +30,7 @@ export default function Rutina() {
   const hoyKey = semana.find((d) => d.esHoy)?.key ?? 'lun'
   const [diaSel, setDiaSel] = useState(hoyKey)
   const [rutina, setRutina] = useState(undefined) // undefined=cargando, null=sin rutina
+  const [biblioteca, setBiblioteca] = useState({})
   const [sesionHoy, setSesionHoy] = useState({})
   const [ultimosPesos, setUltimosPesos] = useState({})
   const [membresia, setMembresia] = useState(null)
@@ -38,6 +39,9 @@ export default function Rutina() {
 
   useEffect(() => {
     if (!gym.id || !perfil?.uid) return
+    listarEjerciciosGym(gym.id)
+      .then((lista) => setBiblioteca(Object.fromEntries(lista.map((e) => [e.id, e]))))
+      .catch(() => {})
     if (perfil.rutinaId) {
       obtenerRutina(gym.id, perfil.rutinaId).then((r) => setRutina(r ?? null))
     } else {
@@ -80,7 +84,7 @@ export default function Rutina() {
     }
   }
 
-  const hechos = sesion && esHoy ? sesion.ejercicios.filter((e) => sesionHoy[e.id]?.hecho).length : 0
+  const hechos = sesion && esHoy ? sesion.ejercicios.filter((e) => sesionHoy[e.ejercicioId]?.hecho).length : 0
   const total = sesion ? sesion.ejercicios.length : 0
   const rango = `Semana del ${semana[0].num} ${MESES[new Date().getMonth()]}`
 
@@ -143,7 +147,9 @@ export default function Rutina() {
           )}
 
           <div style={{ padding: '0 16px 20px', display: 'flex', flexDirection: 'column', gap: 10, position: 'relative' }}>
-            {sesion?.ejercicios.map((ej) => {
+            {sesion?.ejercicios.map((item, idx) => {
+              const info = biblioteca[item.ejercicioId] ?? {}
+              const ej = { ...info, id: item.ejercicioId ?? `x${idx}`, series: item.series, reps: item.reps, descansoSeg: item.descansoSeg, pesoSugerido: item.pesoSugerido }
               const hecho = esHoy && !!sesionHoy[ej.id]?.hecho
               const abierto = activo === ej.id
               const pesoHoy = esHoy ? sesionHoy[ej.id]?.peso : null
@@ -173,7 +179,7 @@ export default function Rutina() {
                       {!ej.imagenUrl && '💪'}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 600 }}>{ej.nombre}</div>
+                      <div style={{ fontSize: 13.5, fontWeight: 600 }}>{ej.nombre ?? 'Ejercicio'}</div>
                       <div style={{ fontSize: 11.5, color: 'var(--text-2)', marginTop: 2 }}>
                         {ej.series} × {ej.reps} · {ej.descansoSeg ?? ej.descanso} s descanso
                       </div>
@@ -181,6 +187,11 @@ export default function Rutina() {
                       {hecho && pesoHoy != null && (
                         <div style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 600, color: 'var(--gym-color)', background: '#fff', borderRadius: 99, padding: '2px 8px', marginTop: 6 }}>
                           Hoy: {pesoHoy} kg
+                        </div>
+                      )}
+                      {!hecho && ej.pesoSugerido != null && (
+                        <div style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 600, color: 'var(--gym-color)', background: 'color-mix(in oklab, var(--gym-color) 10%, white)', borderRadius: 99, padding: '2px 8px', marginTop: 6 }}>
+                          Sugerido: {ej.pesoSugerido} kg
                         </div>
                       )}
                       {!hecho && ultimo != null && <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 4 }}>Última vez: {ultimo} kg</div>}
@@ -194,7 +205,7 @@ export default function Rutina() {
                   {abierto && !hecho && esHoy && (
                     <div style={{ display: 'flex', gap: 8, marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '4px 12px' }}>
-                        <input type="number" inputMode="decimal" value={pesoInput} onChange={(e) => setPesoInput(e.target.value)} placeholder={ultimo != null ? String(ultimo) : '0'} style={{ width: 48, border: 'none', background: 'transparent', fontSize: 13, fontWeight: 600, outline: 'none' }} />
+                        <input type="number" inputMode="decimal" value={pesoInput} onChange={(e) => setPesoInput(e.target.value)} placeholder={ultimo != null ? String(ultimo) : ej.pesoSugerido != null ? String(ej.pesoSugerido) : '0'} style={{ width: 48, border: 'none', background: 'transparent', fontSize: 13, fontWeight: 600, outline: 'none' }} />
                         <span style={{ fontSize: 11, color: 'var(--text-3)' }}>kg de hoy</span>
                       </div>
                       <button onClick={() => completar(ej, true)} style={{ background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '9px 16px', fontSize: 12, fontWeight: 600 }}>
