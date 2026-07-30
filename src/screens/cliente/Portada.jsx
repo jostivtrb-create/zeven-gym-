@@ -44,6 +44,15 @@ export default function Portada() {
         <div style={{ color: 'rgba(255,255,255,.85)', fontSize: 13, marginTop: 2 }}>¡Vamos por ese entreno de hoy!</div>
       </header>
 
+      {!membresia && (
+        <div style={{ margin: '14px 16px 0', background: 'color-mix(in oklab, var(--gym-color) 8%, white)', border: '1px solid color-mix(in oklab, var(--gym-color) 25%, white)', borderRadius: 'var(--radius-md)', padding: '12px 14px' }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--gym-color)' }}>¡Bienvenido a {gym.nombre}! 🎉</div>
+          <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 3, lineHeight: 1.5 }}>
+            Ya quedaste registrado. Cuando pagues en recepción, tu plan se activa aquí mismo y verás tu rutina.
+          </div>
+        </div>
+      )}
+
       {porVencer && (
         <div style={{ margin: '14px 16px 0', background: 'var(--warning-bg)', border: '1px solid #fcd34d', borderRadius: 'var(--radius-md)', padding: '12px 14px' }}>
           <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--warning-text)' }}>Tu plan vence {dias === 0 ? 'hoy' : 'mañana'}</div>
