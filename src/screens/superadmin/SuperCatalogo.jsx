@@ -52,15 +52,21 @@ export default function SuperCatalogo() {
   const [ocupado, setOcupado] = useState(false)
   const [subiendo, setSubiendo] = useState('')
   const [copiado, setCopiado] = useState('')
+  const [mensaje, setMensaje] = useState('')
 
   const cargar = () => listarCatalogoZeven().then(setLista).catch(() => setLista([]))
   useEffect(() => { cargar() }, [])
 
   const sembrar = async () => {
     setOcupado(true)
+    setMensaje('')
     try {
-      await sembrarCatalogoBase()
+      const cuantos = await sembrarCatalogoBase()
       await cargar()
+      setMensaje(cuantos > 0 ? `✓ Se cargaron ${cuantos} ejercicios al catálogo.` : 'El catálogo ya estaba completo.')
+    } catch (e) {
+      console.warn('sembrar catálogo:', e.code ?? e.message)
+      setMensaje('No se pudo cargar el catálogo. ¿Entraste como superadmin?')
     } finally {
       setOcupado(false)
     }
@@ -149,9 +155,10 @@ export default function SuperCatalogo() {
             <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.6 }}>
               Carga los 40 ejercicios base de Zeven. Después les generas la infografía con Gemini y todos los gimnasios las reciben.
             </div>
-            <button onClick={sembrar} disabled={ocupado} style={{ marginTop: 14, background: 'var(--zeven-dark)', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 20px', fontSize: 13, fontWeight: 600 }}>
+            <button onClick={sembrar} disabled={ocupado} style={{ marginTop: 14, background: 'var(--zeven-dark)', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 20px', fontSize: 13, fontWeight: 600, opacity: ocupado ? 0.7 : 1 }}>
               {ocupado ? 'Cargando…' : 'Cargar catálogo base'}
             </button>
+            {mensaje && <div style={{ marginTop: 12, fontSize: 11.5, color: 'var(--text-2)' }}>{mensaje}</div>}
           </div>
         )}
 

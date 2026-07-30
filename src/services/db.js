@@ -495,16 +495,23 @@ export async function listarEjerciciosGym(gymId) {
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
 }
 
-/* Copia el catálogo a un gimnasio nuevo (solo referencias, muy liviano). */
+/* Copia el catálogo a un gimnasio (solo referencias, muy liviano).
+   No duplica: omite los que el gym ya tiene. Devuelve cuántos añadió. */
 export async function copiarCatalogoAGym(gymId) {
-  const catalogo = await listarCatalogoZeven()
+  const [catalogo, yaTiene] = await Promise.all([
+    listarCatalogoZeven(),
+    getDocs(collection(db, 'gimnasios', gymId, 'ejercicios')),
+  ])
   if (!catalogo.length) return 0
+  const existentes = new Set(yaTiene.docs.map((d) => d.data().catalogoId).filter(Boolean))
+  const faltantes = catalogo.filter((c) => !existentes.has(c.id))
+  if (!faltantes.length) return 0
   const lote = writeBatch(db)
-  catalogo.forEach((c) => {
+  faltantes.forEach((c) => {
     lote.set(doc(collection(db, 'gimnasios', gymId, 'ejercicios')), { catalogoId: c.id, creadoEl: serverTimestamp() })
   })
   await lote.commit()
-  return catalogo.length
+  return faltantes.length
 }
 
 export async function guardarEjercicioGym(gymId, ejercicio) {

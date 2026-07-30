@@ -55,6 +55,7 @@ export default function AdminRutinas() {
   const [ocupado, setOcupado] = useState(false)
   const [copiado, setCopiado] = useState('')
   const [subiendo, setSubiendo] = useState('')
+  const [mensaje, setMensaje] = useState('')
 
   const cargar = () => {
     if (!gym.id) return
@@ -87,9 +88,17 @@ export default function AdminRutinas() {
 
   const importar = async () => {
     setOcupado(true)
+    setMensaje('')
     try {
-      await copiarCatalogoAGym(gym.id)
-      cargar()
+      const cuantos = await copiarCatalogoAGym(gym.id)
+      if (cuantos > 0) {
+        cargar()
+      } else {
+        setMensaje('El catálogo de Zeven todavía no tiene ejercicios. Escríbele a Zeven Gym o crea tus propios ejercicios aquí mismo.')
+      }
+    } catch (e) {
+      console.warn('importar catálogo:', e.code ?? e.message)
+      setMensaje('No pudimos traer el catálogo. Revisa tu conexión e inténtalo de nuevo.')
     } finally {
       setOcupado(false)
     }
@@ -185,8 +194,16 @@ export default function AdminRutinas() {
                 <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.6 }}>
                   Trae el catálogo de Zeven (con sus infografías) y borra los que no tengas en tu sede.
                 </div>
-                <button onClick={importar} disabled={ocupado} style={{ marginTop: 14, background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 20px', fontSize: 13, fontWeight: 600 }}>
+                <button onClick={importar} disabled={ocupado} style={{ marginTop: 14, background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 20px', fontSize: 13, fontWeight: 600, opacity: ocupado ? 0.7 : 1 }}>
                   {ocupado ? 'Trayendo…' : 'Traer catálogo de Zeven'}
+                </button>
+                {mensaje && (
+                  <div style={{ marginTop: 12, background: 'var(--warning-bg)', border: '1px solid #fcd34d', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: 11.5, color: 'var(--warning-text)', lineHeight: 1.5 }}>
+                    {mensaje}
+                  </div>
+                )}
+                <button onClick={() => abrir(null)} style={{ marginTop: 12, fontSize: 12, fontWeight: 600, color: 'var(--gym-color)' }}>
+                  + Crear un ejercicio propio
                 </button>
               </div>
             )}
