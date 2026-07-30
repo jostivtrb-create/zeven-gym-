@@ -5,8 +5,9 @@
 > como checklist de repaso final antes de construir.
 
 **Última actualización:** 2026-07-30
-**Estado general:** 🟢 DEFINICIÓN ✅ · DISEÑO ✅ · CONSTRUCCIÓN ✅ (v1 completa en local)
-**Siguiente paso:** despliegue a Vercel (único paso pendiente — ver sección 3d).
+**Estado general:** 🟢 DEFINICIÓN ✅ · DISEÑO ✅ · CONSTRUCCIÓN ✅ · DESPLEGADA EN VERCEL ✅ · 100% CONECTADA A FIRESTORE (cero demos)
+**Repo:** github.com/jostivtrb-create/zeven-gym- (cuenta jostivtrb, SSH `github-jostivtrb`)
+**Fase 6 (2026-07-30):** toda la app usa datos reales — planes, clientes, membresías, pagos (con renovación de vigencia por política), comunicados, configuración, rutinas con plantillas Zeven, progreso del cliente en la nube (sesiones, pesos, racha calculada, medidas, fotos privadas en Storage), avisos de suscripción derivados de fechas y suspensión bloqueante. Rutas protegidas por rol. Los archivos demo fueron eliminados.
 
 **⚠️ Regla de trabajo (pedida por el dueño):** las preguntas deben definir TODO.
 Nada se asume, se adivina ni se improvisa. Si algo no está definido en este documento,

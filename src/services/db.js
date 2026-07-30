@@ -77,25 +77,27 @@ export async function bootstrapPerfil(user, perfilExistente = null) {
     })
     return obtenerPerfil(user.uid)
   }
-  if (perfilExistente) return perfilExistente
+  // Ya es admin: nada que reparar. Si es cliente (o no existe el perfil),
+  // se revisa si el correo tiene invitación de admin pendiente y se asciende/crea.
+  if (perfilExistente && perfilExistente.rol !== 'cliente') return perfilExistente
   try {
     const inv = await getDoc(doc(db, 'adminsPendientes', correo))
     if (inv.exists()) {
       await setDoc(doc(db, 'usuarios', user.uid), {
         rol: 'admin',
         gymId: inv.data().gymId,
-        nombre: inv.data().nombre ?? user.displayName ?? '',
-        celular: inv.data().celular ?? '',
+        nombre: perfilExistente?.nombre ?? inv.data().nombre ?? user.displayName ?? '',
+        celular: perfilExistente?.celular ?? inv.data().celular ?? '',
         correo,
         estado: 'activo',
-        creadoEl: serverTimestamp(),
+        creadoEl: perfilExistente?.creadoEl ?? serverTimestamp(),
       })
       return obtenerPerfil(user.uid)
     }
   } catch (e) {
     console.warn('bootstrapPerfil:', e.code ?? e.message)
   }
-  return null
+  return perfilExistente
 }
 
 const DIA_MS = 86400000

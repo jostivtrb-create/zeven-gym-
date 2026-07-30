@@ -37,11 +37,18 @@ service cloud.firestore {
                  get(/databases/$(database)/documents/adminsPendientes/$(request.auth.token.email)).data.gymId)
         );
       // Editar: el dueño (sin cambiar rol ni gym), su admin, o el superadmin.
-      // Excepción: el correo dueño de la plataforma puede auto-ascender su propio perfil a superadmin.
+      // Excepciones de auto-reparación:
+      // - el correo dueño de la plataforma puede ascender su propio perfil a superadmin
+      // - un correo con invitación pendiente puede ascender su propio perfil a admin de ese gym
       allow update: if esSuperadmin()
         || (autenticado() && request.auth.uid == uid
             && request.auth.token.email == 'jostivtrb@gmail.com'
             && request.resource.data.rol == 'superadmin')
+        || (autenticado() && request.auth.uid == uid
+            && request.resource.data.rol == 'admin'
+            && exists(/databases/$(database)/documents/adminsPendientes/$(request.auth.token.email))
+            && request.resource.data.gymId ==
+               get(/databases/$(database)/documents/adminsPendientes/$(request.auth.token.email)).data.gymId)
         || (autenticado() && request.auth.uid == uid
             && request.resource.data.rol == resource.data.rol
             && request.resource.data.gymId == resource.data.gymId)

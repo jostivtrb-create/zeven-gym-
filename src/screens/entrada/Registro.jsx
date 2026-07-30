@@ -49,8 +49,15 @@ export default function Registro() {
     setOcupado(true)
     setError('')
     try {
-      const cred = await crearCuentaCorreo(form.correo.trim(), form.clave)
-      await guardarPerfil(cred.user.uid, { nombre: form.nombre.trim(), celular: form.celular.trim(), documento: form.documento.trim(), nacimiento: form.nacimiento, correo: form.correo.trim() })
+      await crearCuentaCorreo(form.correo.trim(), form.clave)
+      // Si el correo tiene un rol especial (admin invitado o superadmin), se respeta
+      const especial = await recargarPerfil()
+      if (especial) {
+        navigate(rutaPorRol(especial))
+        return
+      }
+      const uid = (await import('../../firebase')).auth.currentUser?.uid
+      await guardarPerfil(uid, { nombre: form.nombre.trim(), celular: form.celular.trim(), documento: form.documento.trim(), nacimiento: form.nacimiento, correo: form.correo.trim() })
       navigate('/app')
     } catch (e) {
       setError(MENSAJES[e.code] ?? 'No pudimos crear la cuenta. Inténtalo de nuevo.')
