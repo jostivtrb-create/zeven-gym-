@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { rutaPorRol } from '../services/db'
 
-export default function RutaProtegida({ rol, children }) {
+export default function RutaProtegida({ rol, requiereGym, children }) {
   const { usuario, perfil, cargando } = useAuth()
 
   if (cargando) {
@@ -13,8 +13,17 @@ export default function RutaProtegida({ rol, children }) {
       </div>
     )
   }
+
+  // Sin sesión → a la pantalla de entrada
   if (!usuario) return <Navigate to="/" replace />
-  // El superadmin puede entrar a cualquier panel (modo soporte / vista de cliente)
-  if (perfil && rol && perfil.rol !== rol && perfil.rol !== 'superadmin') return <Navigate to={rutaPorRol(perfil)} replace />
+
+  const esSuper = perfil?.rol === 'superadmin'
+
+  // Sin gimnasio vinculado (y no es superadmin) → a vincular
+  if (requiereGym && !perfil?.gymId && !esSuper) return <Navigate to="/vincular" replace />
+
+  // Rol equivocado → a su panel (el superadmin puede entrar a todo: modo soporte)
+  if (perfil && rol && perfil.rol !== rol && !esSuper) return <Navigate to={rutaPorRol(perfil)} replace />
+
   return children
 }

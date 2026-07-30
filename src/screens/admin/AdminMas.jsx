@@ -10,6 +10,7 @@ const ESTADOS_SUS = {
 }
 
 const OPCIONES = [
+  { ruta: '/admin/invitar', titulo: 'Invitar clientes', detalle: 'Tu código QR y tu link para compartir', icono: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M14 14h3v3h-3z" /><path d="M20 14v3M17 20h4" /></> },
   { ruta: '/admin/pagos', titulo: 'Pagos', detalle: 'Vencidos y por vencer, registrar pagos', icono: <><rect x="3" y="6" width="18" height="13" rx="2" /><line x1="3" y1="10" x2="21" y2="10" /></> },
   { ruta: '/admin/planes', titulo: 'Planes del gym', detalle: 'Nombre, precio y duración', icono: <><path d="M20 12 V7 a2 2 0 0 0 -2 -2 H6 a2 2 0 0 0 -2 2 v10 a2 2 0 0 0 2 2 h6" /><circle cx="17" cy="17" r="4" /><path d="M17 15.5 v1.5 l1 1" /></> },
   { ruta: '/admin/comunicados', titulo: 'Comunicados', detalle: 'Avisos que ven tus clientes', icono: <><path d="M4 10 L18 5 V19 L4 14 Z" /><path d="M8 14 v4" /></> },

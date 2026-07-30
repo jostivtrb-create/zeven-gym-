@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useGym } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
-import { obtenerMembresia, listarPagosCliente } from '../../services/db'
+import { obtenerMembresia, listarPagosCliente, desvincularGym } from '../../services/db'
 
 const seccionTitulo = { fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-3)' }
 const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }
@@ -16,6 +16,8 @@ export default function Perfil() {
   const { perfil, salir } = useAuth()
   const [membresia, setMembresia] = useState(null)
   const [pagos, setPagos] = useState([])
+  const [confirmandoSalida, setConfirmandoSalida] = useState(false)
+  const [ocupado, setOcupado] = useState(false)
 
   useEffect(() => {
     if (!gym.id || !perfil?.uid) return
@@ -45,6 +47,19 @@ export default function Perfil() {
       location.href = '/'
     }
   }
+
+  const salirDelGym = async () => {
+    setOcupado(true)
+    try {
+      await desvincularGym(perfil.uid)
+      location.href = '/vincular'
+    } catch (e) {
+      console.warn('desvincular:', e.code ?? e.message)
+      setOcupado(false)
+    }
+  }
+
+  const diasPagados = dias !== null && dias > 0 ? dias : 0
 
   return (
     <>
@@ -135,6 +150,36 @@ export default function Perfil() {
               </div>
             ))}
           </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={seccionTitulo}>Mi gimnasio</div>
+          {confirmandoSalida ? (
+            <div style={{ ...card, border: '1px solid #f3d5d5', padding: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>¿Salir de {gym.nombre}?</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.6 }}>
+                {diasPagados > 0
+                  ? `Te quedan ${diasPagados} día${diasPagados === 1 ? '' : 's'} pagados. Guardamos tu historial: si vuelves con el mismo código, lo recuperas.`
+                  : 'Guardamos tu historial: si vuelves con el mismo código, lo recuperas tal cual.'}
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <button onClick={() => setConfirmandoSalida(false)} style={{ flex: 1, border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '10px 0', fontSize: 12.5, fontWeight: 600, background: 'var(--surface)' }}>
+                  Quedarme
+                </button>
+                <button onClick={salirDelGym} disabled={ocupado} style={{ flex: 1, borderRadius: 'var(--radius-sm)', padding: '10px 0', fontSize: 12.5, fontWeight: 600, background: 'var(--danger)', color: '#fff', opacity: ocupado ? 0.6 : 1 }}>
+                  {ocupado ? 'Saliendo…' : 'Sí, salir'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmandoSalida(true)} style={{ ...card, padding: 14, display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600 }}>{gym.nombre}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Toca para desvincularte de este gimnasio</div>
+              </div>
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-3)' }}>Salir</span>
+            </button>
+          )}
         </div>
 
         <button onClick={cerrarSesion} style={{ background: 'var(--surface)', border: '1px solid #f3d5d5', color: 'var(--danger)', borderRadius: 'var(--radius-md)', padding: '12px 0', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>

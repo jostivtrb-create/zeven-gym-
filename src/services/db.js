@@ -384,3 +384,35 @@ export async function obtenerMembresia(gymId, uid) {
     return null
   }
 }
+
+/* ============ VINCULACIÓN CLIENTE ↔ GIMNASIO ============ */
+
+/* Vincula al usuario con un gimnasio (por código o link). Si no tiene perfil,
+   lo crea como cliente. Conserva cualquier membresía previa en ese gym. */
+export async function vincularGym(user, gym, datosExtra = {}) {
+  const ref = doc(db, 'usuarios', user.uid)
+  const snap = await getDoc(ref)
+  if (snap.exists()) {
+    await updateDoc(ref, { gymId: gym.id })
+  } else {
+    await setDoc(ref, {
+      rol: 'cliente',
+      gymId: gym.id,
+      nombre: datosExtra.nombre ?? user.displayName ?? '',
+      celular: datosExtra.celular ?? '',
+      documento: datosExtra.documento ?? '',
+      nacimiento: datosExtra.nacimiento ?? '',
+      correo: user.email ?? '',
+      fotoUrl: null,
+      estado: 'activo',
+      creadoEl: serverTimestamp(),
+    })
+  }
+  return obtenerPerfil(user.uid)
+}
+
+/* Desvincula al usuario de su gimnasio. NO borra su membresía ni sus pagos:
+   si vuelve a entrar con el mismo código, recupera su historial. */
+export async function desvincularGym(uid) {
+  await updateDoc(doc(db, 'usuarios', uid), { gymId: null, rutinaId: null })
+}

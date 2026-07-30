@@ -62,7 +62,12 @@ export default function AdminClientes() {
   return (
     <>
       <header style={{ background: 'var(--gym-color)', padding: '62px 20px 16px', borderRadius: '0 0 var(--radius-header) var(--radius-header)' }}>
-        <div style={{ color: '#fff', fontSize: 20, fontWeight: 600 }}>Clientes</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ color: '#fff', fontSize: 20, fontWeight: 600 }}>Clientes</div>
+          <button onClick={() => navigate('/admin/invitar')} style={{ background: '#fff', color: 'var(--gym-color)', borderRadius: 'var(--radius-sm)', padding: '8px 12px', fontSize: 12, fontWeight: 600 }}>
+            + Invitar
+          </button>
+        </div>
         <div style={{ marginTop: 12, background: 'rgba(255,255,255,.18)', borderRadius: 'var(--radius)', padding: '4px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" strokeWidth="2.5">
             <circle cx="10" cy="10" r="6" />
@@ -87,8 +92,11 @@ export default function AdminClientes() {
           <div style={{ textAlign: 'center', padding: '40px 24px' }}>
             <div style={{ fontSize: 14, fontWeight: 600 }}>Aún no tienes clientes</div>
             <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.6 }}>
-              Comparte el código <b style={{ letterSpacing: '.08em' }}>{gym.codigo}</b> (o tu link) para que se registren solos desde su celular.
+              Comparte tu código QR o tu link para que se registren solos desde su celular y aparezcan aquí.
             </div>
+            <button onClick={() => navigate('/admin/invitar')} style={{ marginTop: 14, background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius)', padding: '11px 18px', fontSize: 13, fontWeight: 600 }}>
+              Ver mi QR e invitar
+            </button>
           </div>
         )}
 

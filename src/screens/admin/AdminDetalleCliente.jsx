@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useGym } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
-import { obtenerCliente, listarPlanes, listarPagosCliente, listarRutinas, registrarPago, congelarMembresia, actualizarUsuario, eliminarCliente, asignarRutina } from '../../services/db'
+import { obtenerCliente, listarPlanes, listarPagosCliente, listarRutinas, registrarPago, congelarMembresia, actualizarUsuario, eliminarCliente, asignarRutina, desvincularGym } from '../../services/db'
 import { ESTADOS, iniciales } from './AdminClientes'
 
 const seccionTitulo = { fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-3)' }
@@ -92,6 +92,16 @@ export default function AdminDetalleCliente() {
       await asignarRutina(uid, rutinaId)
       setEligiendoRutina(false)
       await cargar()
+    } finally {
+      setOcupado(false)
+    }
+  }
+
+  const sacarDelGym = async () => {
+    setOcupado(true)
+    try {
+      await desvincularGym(uid)
+      navigate('/admin/clientes')
     } finally {
       setOcupado(false)
     }
@@ -236,6 +246,16 @@ export default function AdminDetalleCliente() {
             </div>
           </div>
         )}
+
+        <button onClick={sacarDelGym} disabled={ocupado} style={{ ...card, padding: 14, display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 600 }}>Sacar del gimnasio</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5 }}>
+              Se desvincula pero conserva su historial: si vuelve con tu código, lo recupera.
+            </div>
+          </div>
+          <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-3)' }}>Sacar</span>
+        </button>
 
         {confirmando ? (
           <div style={{ ...card, border: '1px solid #f3d5d5', padding: 14 }}>

@@ -49,9 +49,14 @@ service cloud.firestore {
             && exists(/databases/$(database)/documents/adminsPendientes/$(request.auth.token.email))
             && request.resource.data.gymId ==
                get(/databases/$(database)/documents/adminsPendientes/$(request.auth.token.email)).data.gymId)
+        // El cliente puede vincularse/desvincularse de un gimnasio (código o link),
+        // pero NUNCA puede cambiarse el rol.
         || (autenticado() && request.auth.uid == uid
             && request.resource.data.rol == resource.data.rol
-            && request.resource.data.gymId == resource.data.gymId)
+            && (request.resource.data.gymId == resource.data.gymId
+                || (resource.data.rol == 'cliente'
+                    && (request.resource.data.gymId == null
+                        || exists(/databases/$(database)/documents/gimnasios/$(request.resource.data.gymId))))))
         || (miPerfil().rol == 'admin' && resource.data.gymId == miPerfil().gymId
             && request.resource.data.rol == 'cliente');
       allow delete: if esSuperadmin()

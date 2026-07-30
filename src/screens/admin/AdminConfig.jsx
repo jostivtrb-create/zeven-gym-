@@ -68,6 +68,15 @@ export default function AdminConfig() {
       </header>
 
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <button onClick={() => navigate('/admin/invitar')} style={{ ...card, padding: 14, display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left' }}>
+          <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-sm)', flex: 'none', background: 'color-mix(in oklab, var(--gym-color) 10%, white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📱</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>Invitar clientes</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Tu código QR y tu link · código {gym.codigo}</div>
+          </div>
+          <span style={{ color: 'var(--text-4)', fontSize: 16 }}>›</span>
+        </button>
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={seccion}>Contacto y redes</div>
           <div style={{ ...card, padding: '2px 14px' }}>
