@@ -5,7 +5,43 @@ import { listarPlanes, guardarPlan } from '../../services/db'
 
 const pesos = (n) => '$' + Number(n).toLocaleString('es-CO')
 const campo = { flex: 1, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 12px' }
-const inputStyle = { width: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: 13, fontWeight: 600, padding: 0 }
+const inputStyle = { width: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: 13, fontWeight: 600, padding: 0, fontFamily: 'inherit' }
+
+/* Definido FUERA del componente: si se declara dentro, React lo recrea en cada
+   pulsación y los campos pierden el foco. */
+function EditorPlan({ nuevo, form, setForm, guardar, cancelar, ocupado }) {
+  return (
+    <div style={{ background: 'var(--surface)', border: '1.5px solid var(--gym-color)', borderRadius: 'var(--radius-md)', padding: 14 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--gym-color)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+        {nuevo ? 'Nuevo plan' : 'Editando'}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+        <div style={campo}>
+          <div style={{ fontSize: 10, color: 'var(--text-3)' }}>Nombre del plan</div>
+          <input value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Ej: Plan Mensual" style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div style={campo}>
+            <div style={{ fontSize: 10, color: 'var(--text-3)' }}>Precio (COP)</div>
+            <input type="number" inputMode="numeric" value={form.precio} onChange={(e) => setForm({ ...form, precio: e.target.value })} placeholder="70000" style={inputStyle} />
+          </div>
+          <div style={campo}>
+            <div style={{ fontSize: 10, color: 'var(--text-3)' }}>Duración (días)</div>
+            <input type="number" inputMode="numeric" value={form.duracionDias} onChange={(e) => setForm({ ...form, duracionDias: e.target.value })} placeholder="30" style={inputStyle} />
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+          <button onClick={guardar} disabled={ocupado} style={{ flex: 1, background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '10px 0', fontSize: 12.5, fontWeight: 600, opacity: ocupado ? 0.6 : 1 }}>
+            {ocupado ? 'Guardando…' : nuevo ? 'Crear plan' : 'Guardar cambios'}
+          </button>
+          <button onClick={cancelar} style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', fontSize: 12.5, fontWeight: 600, color: 'var(--text-3)' }}>
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function AdminPlanes() {
   const navigate = useNavigate()
@@ -36,36 +72,15 @@ export default function AdminPlanes() {
     }
   }
 
-  const Editor = () => (
-    <div style={{ background: 'var(--surface)', border: '1.5px solid var(--gym-color)', borderRadius: 'var(--radius-md)', padding: 14 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--gym-color)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
-        {editando === 'nuevo' ? 'Nuevo plan' : 'Editando'}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
-        <div style={campo}>
-          <div style={{ fontSize: 10, color: 'var(--text-3)' }}>Nombre del plan</div>
-          <input value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Ej: Plan Mensual" style={inputStyle} />
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <div style={campo}>
-            <div style={{ fontSize: 10, color: 'var(--text-3)' }}>Precio (COP)</div>
-            <input type="number" value={form.precio} onChange={(e) => setForm({ ...form, precio: e.target.value })} placeholder="70000" style={inputStyle} />
-          </div>
-          <div style={campo}>
-            <div style={{ fontSize: 10, color: 'var(--text-3)' }}>Duración (días)</div>
-            <input type="number" value={form.duracionDias} onChange={(e) => setForm({ ...form, duracionDias: e.target.value })} placeholder="30" style={inputStyle} />
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
-          <button onClick={guardar} disabled={ocupado} style={{ flex: 1, background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '10px 0', fontSize: 12.5, fontWeight: 600, opacity: ocupado ? 0.6 : 1 }}>
-            {ocupado ? 'Guardando…' : editando === 'nuevo' ? 'Crear plan' : 'Guardar cambios'}
-          </button>
-          <button onClick={() => setEditando(null)} style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', fontSize: 12.5, fontWeight: 600, color: 'var(--text-3)' }}>
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
+  const editor = (
+    <EditorPlan
+      nuevo={editando === 'nuevo'}
+      form={form}
+      setForm={setForm}
+      guardar={guardar}
+      cancelar={() => setEditando(null)}
+      ocupado={ocupado}
+    />
   )
 
   return (
@@ -87,7 +102,7 @@ export default function AdminPlanes() {
 
         {(planes ?? []).map((p) =>
           editando === p.id ? (
-            <Editor key={p.id} />
+            <div key={p.id}>{editor}</div>
           ) : (
             <div key={p.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ flex: 1 }}>
@@ -101,7 +116,7 @@ export default function AdminPlanes() {
         )}
 
         {editando === 'nuevo' ? (
-          <Editor />
+          editor
         ) : (
           <button onClick={() => abrir(null)} style={{ border: '1.5px dashed #c9c9c5', borderRadius: 'var(--radius-md)', padding: '13px 0', textAlign: 'center', fontSize: 13, fontWeight: 600, color: 'var(--text-3)', background: 'transparent' }}>
             + Nuevo plan

@@ -37,6 +37,69 @@ const VACIA = {
   dias: { lun: null, mar: null, mie: null, jue: null, vie: null, sab: null, dom: null },
 }
 
+/* Definido FUERA del componente principal: si se declara dentro, React lo
+   recrea en cada pulsación y los campos pierden el foco. */
+const CAMPO = { flex: 1, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }
+const INPUT = { width: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: 12.5, fontWeight: 600, padding: 0, fontFamily: 'inherit' }
+
+function EditorEjercicio({ esNuevo, form, setForm, promptCopiado, subiendoImg, crearInfografia, subirInfografia, guardar, quitar, cancelar }) {
+  return (
+    <div style={{ background: 'var(--surface)', border: '1.5px solid var(--gym-color)', borderRadius: 'var(--radius-md)', padding: 12 }}>
+      <input value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Nombre del ejercicio" style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 13, fontWeight: 600, padding: 0, boxSizing: 'border-box' }} />
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        {[['series', 'Series'], ['reps', 'Reps'], ['descansoSeg', 'Descanso (s)']].map(([k, label]) => (
+          <div key={k} style={CAMPO}>
+            <div style={{ fontSize: 9.5, color: 'var(--text-3)' }}>{label}</div>
+            <input type="number" value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} style={INPUT} />
+          </div>
+        ))}
+      </div>
+      <textarea
+        value={form.nota}
+        onChange={(e) => setForm({ ...form, nota: e.target.value })}
+        placeholder="Mini explicación de la técnica (ej: espalda recta, baja lento hasta 90°, empuja con los talones…). Se usa para crear la infografía y el cliente la ve como consejo."
+        rows={2}
+        style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', background: 'var(--surface-2)', padding: '9px 11px', fontSize: 11.5, outline: 'none', resize: 'none', marginTop: 10, boxSizing: 'border-box', fontFamily: 'inherit', lineHeight: 1.5 }}
+      />
+
+      <div style={{ marginTop: 10, background: 'color-mix(in oklab, var(--gym-color) 6%, white)', border: '1px dashed color-mix(in oklab, var(--gym-color) 30%, white)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {form.imagenUrl ? (
+            <img src={form.imagenUrl} alt="Infografía" style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', flex: 'none' }} />
+          ) : (
+            <div style={{ width: 44, height: 44, borderRadius: 8, flex: 'none', background: '#fff', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>✨</div>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600 }}>{form.imagenUrl ? 'Infografía lista' : 'Infografía del ejercicio'}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-3)', lineHeight: 1.4 }}>
+              {promptCopiado ? '✓ Prompt copiado — pégalo en Gemini y guarda la imagen que te genere.' : 'Crea el prompt, genera la imagen en Gemini y súbela aquí.'}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <button onClick={crearInfografia} style={{ flex: 1, background: 'var(--gym-color)', color: '#fff', borderRadius: 8, padding: '8px 0', fontSize: 11.5, fontWeight: 600 }}>
+            {promptCopiado ? '✓ Copiado · abrir Gemini' : '✨ Crear infografía con Gemini'}
+          </button>
+          <label style={{ flex: 1, textAlign: 'center', background: '#fff', border: '1px solid var(--border-2)', borderRadius: 8, padding: '8px 0', fontSize: 11.5, fontWeight: 600, color: '#565652', cursor: 'pointer' }}>
+            {subiendoImg ? 'Subiendo…' : form.imagenUrl ? 'Cambiar imagen' : 'Subir infografía'}
+            <input type="file" accept="image/*" onChange={subirInfografia} style={{ display: 'none' }} />
+          </label>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        <button onClick={guardar} style={{ flex: 1, background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '9px 0', fontSize: 12, fontWeight: 600 }}>
+          {esNuevo ? 'Añadir' : 'Guardar'}
+        </button>
+        {!esNuevo && (
+          <button onClick={quitar} style={{ border: '1px solid #f3d5d5', color: 'var(--danger)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', fontSize: 12, fontWeight: 600, background: 'var(--surface)' }}>Quitar</button>
+        )}
+        <button onClick={cancelar} style={{ border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', fontSize: 12, fontWeight: 600, color: 'var(--text-3)', background: 'var(--surface)' }}>Cancelar</button>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminEditorRutina() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -134,63 +197,20 @@ export default function AdminEditorRutina() {
     }
   }
 
-  const campo = { flex: 1, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }
-  const inputStyle = { width: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: 12.5, fontWeight: 600, padding: 0 }
-
-  const EditorEjercicio = () => (
-    <div style={{ background: 'var(--surface)', border: '1.5px solid var(--gym-color)', borderRadius: 'var(--radius-md)', padding: 12 }}>
-      <input value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Nombre del ejercicio" style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 13, fontWeight: 600, padding: 0, boxSizing: 'border-box' }} />
-      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-        {[['series', 'Series'], ['reps', 'Reps'], ['descansoSeg', 'Descanso (s)']].map(([k, label]) => (
-          <div key={k} style={campo}>
-            <div style={{ fontSize: 9.5, color: 'var(--text-3)' }}>{label}</div>
-            <input type="number" value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} style={inputStyle} />
-          </div>
-        ))}
-      </div>
-      <textarea
-        value={form.nota}
-        onChange={(e) => setForm({ ...form, nota: e.target.value })}
-        placeholder="Mini explicación de la técnica (ej: espalda recta, baja lento hasta 90°, empuja con los talones…). Se usa para crear la infografía y el cliente la ve como consejo."
-        rows={2}
-        style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', background: 'var(--surface-2)', padding: '9px 11px', fontSize: 11.5, outline: 'none', resize: 'none', marginTop: 10, boxSizing: 'border-box', fontFamily: 'inherit', lineHeight: 1.5 }}
-      />
-
-      <div style={{ marginTop: 10, background: 'color-mix(in oklab, var(--gym-color) 6%, white)', border: '1px dashed color-mix(in oklab, var(--gym-color) 30%, white)', borderRadius: 'var(--radius-sm)', padding: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {form.imagenUrl ? (
-            <img src={form.imagenUrl} alt="Infografía" style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', flex: 'none' }} />
-          ) : (
-            <div style={{ width: 44, height: 44, borderRadius: 8, flex: 'none', background: '#fff', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>✨</div>
-          )}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 600 }}>{form.imagenUrl ? 'Infografía lista' : 'Infografía del ejercicio'}</div>
-            <div style={{ fontSize: 10, color: 'var(--text-3)', lineHeight: 1.4 }}>
-              {promptCopiado ? '✓ Prompt copiado — pégalo en Gemini y guarda la imagen que te genere.' : 'Crea el prompt, genera la imagen en Gemini y súbela aquí.'}
-            </div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <button onClick={crearInfografia} style={{ flex: 1, background: 'var(--gym-color)', color: '#fff', borderRadius: 8, padding: '8px 0', fontSize: 11.5, fontWeight: 600 }}>
-            {promptCopiado ? '✓ Copiado · abrir Gemini' : '✨ Crear infografía con Gemini'}
-          </button>
-          <label style={{ flex: 1, textAlign: 'center', background: '#fff', border: '1px solid var(--border-2)', borderRadius: 8, padding: '8px 0', fontSize: 11.5, fontWeight: 600, color: '#565652', cursor: 'pointer' }}>
-            {subiendoImg ? 'Subiendo…' : form.imagenUrl ? 'Cambiar imagen' : 'Subir infografía'}
-            <input type="file" accept="image/*" onChange={subirInfografia} style={{ display: 'none' }} />
-          </label>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-        <button onClick={guardarEjercicio} style={{ flex: 1, background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '9px 0', fontSize: 12, fontWeight: 600 }}>
-          {editandoId === 'nuevo' ? 'Añadir' : 'Guardar'}
-        </button>
-        {editandoId !== 'nuevo' && (
-          <button onClick={() => quitarEjercicio(editandoId)} style={{ border: '1px solid #f3d5d5', color: 'var(--danger)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', fontSize: 12, fontWeight: 600, background: 'var(--surface)' }}>Quitar</button>
-        )}
-        <button onClick={() => setEditandoId(null)} style={{ border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', fontSize: 12, fontWeight: 600, color: 'var(--text-3)', background: 'var(--surface)' }}>Cancelar</button>
-      </div>
-    </div>
+  const editorEjercicio = (
+    <EditorEjercicio
+      esNuevo={editandoId === 'nuevo'}
+      form={form}
+      setForm={setForm}
+      gym={gym}
+      promptCopiado={promptCopiado}
+      subiendoImg={subiendoImg}
+      crearInfografia={crearInfografia}
+      subirInfografia={subirInfografia}
+      guardar={guardarEjercicio}
+      quitar={() => quitarEjercicio(editandoId)}
+      cancelar={() => setEditandoId(null)}
+    />
   )
 
   return (
@@ -235,7 +255,7 @@ export default function AdminEditorRutina() {
 
         {sesion?.ejercicios.map((ej) =>
           editandoId === ej.id ? (
-            <EditorEjercicio key={ej.id} />
+            <div key={ej.id}>{editorEjercicio}</div>
           ) : (
             <div key={ej.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
               {ej.imagenUrl ? (
@@ -253,7 +273,7 @@ export default function AdminEditorRutina() {
         )}
 
         {editandoId === 'nuevo' ? (
-          <EditorEjercicio />
+          editorEjercicio
         ) : (
           <button onClick={() => abrirEjercicio(null)} style={{ border: '1.5px dashed #c9c9c5', borderRadius: 'var(--radius-md)', padding: '11px 0', textAlign: 'center', fontSize: 12.5, fontWeight: 600, color: 'var(--text-3)', background: 'transparent' }}>
             + Añadir ejercicio

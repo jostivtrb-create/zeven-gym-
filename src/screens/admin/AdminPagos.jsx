@@ -21,6 +21,21 @@ function textoVencimiento(c) {
   return `Vence en ${dias} días · ${plan}`
 }
 
+/* Fuera del componente: así React no la recrea en cada render. */
+function Fila({ c, color, registrar, ocupado }) {
+  return (
+    <div style={fila}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600 }}>{c.nombre}</div>
+        <div style={{ fontSize: 11, color }}>{textoVencimiento(c)}</div>
+      </div>
+      <button onClick={() => registrar(c)} disabled={ocupado === c.uid} style={{ background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '8px 12px', fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap', opacity: ocupado === c.uid ? 0.6 : 1 }}>
+        {ocupado === c.uid ? 'Guardando…' : 'Registrar pago'}
+      </button>
+    </div>
+  )
+}
+
 export default function AdminPagos() {
   const navigate = useNavigate()
   const { gym } = useGym()
@@ -53,18 +68,6 @@ export default function AdminPagos() {
     }
   }
 
-  const Fila = ({ c, color }) => (
-    <div style={fila}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 600 }}>{c.nombre}</div>
-        <div style={{ fontSize: 11, color }}>{textoVencimiento(c)}</div>
-      </div>
-      <button onClick={() => registrar(c)} disabled={ocupado === c.uid} style={{ background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '8px 12px', fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap', opacity: ocupado === c.uid ? 0.6 : 1 }}>
-        {ocupado === c.uid ? 'Guardando…' : 'Registrar pago'}
-      </button>
-    </div>
-  )
-
   return (
     <>
       <header style={{ background: 'var(--gym-color)', padding: '62px 20px 20px', borderRadius: '0 0 var(--radius-header) var(--radius-header)' }}>
@@ -81,13 +84,13 @@ export default function AdminPagos() {
         {vencidos.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ ...seccion, color: 'var(--danger)' }}>Vencidos</div>
-            {vencidos.map((c) => <Fila key={c.uid} c={c} color="var(--danger)" />)}
+            {vencidos.map((c) => <Fila key={c.uid} c={c} color="var(--danger)" registrar={registrar} ocupado={ocupado} />)}
           </div>
         )}
         {porVencer.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ ...seccion, color: 'var(--warning-text)' }}>Vencen pronto</div>
-            {porVencer.map((c) => <Fila key={c.uid} c={c} color="var(--warning-text)" />)}
+            {porVencer.map((c) => <Fila key={c.uid} c={c} color="var(--warning-text)" registrar={registrar} ocupado={ocupado} />)}
           </div>
         )}
 
