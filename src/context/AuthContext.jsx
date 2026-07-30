@@ -26,8 +26,8 @@ export function AuthProvider({ children }) {
     const off = onAuthStateChanged(auth, async (u) => {
       setUsuario(u)
       if (u) {
-        let p = await obtenerPerfil(u.uid)
-        if (!p) p = await bootstrapPerfil(u) // superadmin dueño o admin pre-invitado
+        // Bootstrap y auto-reparación: superadmin dueño o admin pre-invitado
+        const p = await bootstrapPerfil(u, await obtenerPerfil(u.uid))
         setPerfil(p)
         if (p?.gymId) {
           const gym = await obtenerGym(p.gymId)
@@ -64,7 +64,7 @@ export function AuthProvider({ children }) {
 
   const recargarPerfil = async () => {
     if (!auth.currentUser) return null
-    const p = await obtenerPerfil(auth.currentUser.uid)
+    const p = await bootstrapPerfil(auth.currentUser, await obtenerPerfil(auth.currentUser.uid))
     setPerfil(p)
     return p
   }

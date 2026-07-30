@@ -60,22 +60,25 @@ export const rutaPorRol = (perfil) => (perfil?.rol === 'superadmin' ? '/super' :
 
 export const CORREO_SUPERADMIN = 'jostivtrb@gmail.com'
 
-/* Bootstrap de perfiles al primer login:
-   - el correo dueño de la plataforma → superadmin
+/* Bootstrap de perfiles al login:
+   - el correo dueño de la plataforma → superadmin (y se AUTO-REPARA si quedó
+     guardado con otro rol, p. ej. si entró por la pantalla de registro)
    - un correo pre-invitado en adminsPendientes → admin de su gym */
-export async function bootstrapPerfil(user) {
+export async function bootstrapPerfil(user, perfilExistente = null) {
   const correo = user.email ?? ''
   if (correo === CORREO_SUPERADMIN) {
+    if (perfilExistente?.rol === 'superadmin') return perfilExistente
     await setDoc(doc(db, 'usuarios', user.uid), {
       rol: 'superadmin',
       gymId: null,
       nombre: user.displayName ?? 'Superadmin',
       correo,
       estado: 'activo',
-      creadoEl: serverTimestamp(),
+      creadoEl: perfilExistente?.creadoEl ?? serverTimestamp(),
     })
     return obtenerPerfil(user.uid)
   }
+  if (perfilExistente) return perfilExistente
   try {
     const inv = await getDoc(doc(db, 'adminsPendientes', correo))
     if (inv.exists()) {

@@ -36,8 +36,12 @@ service cloud.firestore {
               && request.resource.data.gymId ==
                  get(/databases/$(database)/documents/adminsPendientes/$(request.auth.token.email)).data.gymId)
         );
-      // Editar: el dueño (sin cambiar rol ni gym), su admin, o el superadmin
+      // Editar: el dueño (sin cambiar rol ni gym), su admin, o el superadmin.
+      // Excepción: el correo dueño de la plataforma puede auto-ascender su propio perfil a superadmin.
       allow update: if esSuperadmin()
+        || (autenticado() && request.auth.uid == uid
+            && request.auth.token.email == 'jostivtrb@gmail.com'
+            && request.resource.data.rol == 'superadmin')
         || (autenticado() && request.auth.uid == uid
             && request.resource.data.rol == resource.data.rol
             && request.resource.data.gymId == resource.data.gymId)

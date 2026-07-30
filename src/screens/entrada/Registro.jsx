@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGym } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
-import { crearPerfilCliente } from '../../services/db'
+import { crearPerfilCliente, rutaPorRol } from '../../services/db'
 
 const campo = { background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius)', padding: '11px 14px' }
 const inputStyle = { width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 13.5, fontWeight: 500, padding: 0, marginTop: 1 }
@@ -19,7 +19,7 @@ function Campo({ label, type = 'text', value, onChange, flex, placeholder, input
 export default function Registro() {
   const navigate = useNavigate()
   const { gym } = useGym()
-  const { crearCuentaCorreo, entrarConGoogle } = useAuth()
+  const { crearCuentaCorreo, entrarConGoogle, recargarPerfil } = useAuth()
   const [form, setForm] = useState({ nombre: '', celular: '', documento: '', nacimiento: '', correo: '', clave: '' })
   const [error, setError] = useState('')
   const [ocupado, setOcupado] = useState(false)
@@ -65,6 +65,13 @@ export default function Registro() {
     try {
       const cred = await entrarConGoogle()
       if (cred?.user) {
+        // Si el correo ya tiene un rol (superadmin dueño, admin invitado o
+        // cliente existente), NO se crea perfil de cliente: se respeta su rol.
+        const existente = await recargarPerfil()
+        if (existente) {
+          navigate(rutaPorRol(existente))
+          return
+        }
         await guardarPerfil(cred.user.uid, {
           nombre: form.nombre.trim() || cred.user.displayName || '',
           celular: form.celular.trim(),
