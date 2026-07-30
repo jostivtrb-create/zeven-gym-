@@ -9,6 +9,7 @@ const ThemeContext = createContext(null)
 
 export function ThemeProvider({ children }) {
   const [gym, setGym] = useState(demoGym)
+  const [soporte, setSoporte] = useState(null) // { gymNombre } cuando el superadmin entra a un panel ajeno
 
   useEffect(() => {
     const color = gym?.branding?.color
@@ -24,7 +25,7 @@ export function ThemeProvider({ children }) {
   }, [gym])
 
   return (
-    <ThemeContext.Provider value={{ gym, setGym }}>
+    <ThemeContext.Provider value={{ gym, setGym, soporte, setSoporte }}>
       {children}
     </ThemeContext.Provider>
   )

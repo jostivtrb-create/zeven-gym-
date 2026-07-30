@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Outlet, NavLink } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { demoSuscripcionGym } from '../../data/demoAdmin'
+import { useGym } from '../../context/ThemeContext'
 
 const tabs = [
   { to: '/admin', end: true, label: 'Inicio', icon: <path d="M4 11 L12 4 L20 11 V20 H4 Z" /> },
@@ -70,9 +71,33 @@ function AvisoSuscripcion() {
   )
 }
 
+function BannerSoporte() {
+  const { gym, soporte, setSoporte } = useGym()
+  const navigate = useNavigate()
+  if (!soporte) return null
+  return (
+    <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'var(--zeven-dark)', color: '#fff', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ width: 22, height: 22, borderRadius: 7, background: '#fff', color: 'var(--zeven-dark)', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>Z</div>
+      <div style={{ flex: 1, fontSize: 12 }}>
+        Estás en <b>modo soporte</b> — {soporte.gymNombre ?? gym.nombre}
+      </div>
+      <button
+        onClick={() => {
+          setSoporte(null)
+          navigate('/super/gimnasios')
+        }}
+        style={{ background: 'rgba(255,255,255,.16)', color: '#fff', borderRadius: 99, padding: '5px 12px', fontSize: 11.5, fontWeight: 600 }}
+      >
+        Salir
+      </button>
+    </div>
+  )
+}
+
 export default function AdminShell() {
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <BannerSoporte />
       <AvisoSuscripcion />
       <main style={{ flex: 1 }}>
         <Outlet />

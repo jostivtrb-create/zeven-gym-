@@ -20,6 +20,12 @@ import AdminEditorRutina from './screens/admin/AdminEditorRutina'
 import AdminComunicados from './screens/admin/AdminComunicados'
 import AdminConfig from './screens/admin/AdminConfig'
 import AdminMas from './screens/admin/AdminMas'
+import SuperShell from './screens/superadmin/SuperShell'
+import SuperDashboard from './screens/superadmin/SuperDashboard'
+import SuperGimnasios from './screens/superadmin/SuperGimnasios'
+import SuperDetalleGym from './screens/superadmin/SuperDetalleGym'
+import SuperCrearGym from './screens/superadmin/SuperCrearGym'
+import SuperPagos from './screens/superadmin/SuperPagos'
 
 export default function App() {
   return (
@@ -47,6 +53,13 @@ export default function App() {
             <Route path="comunicados" element={<AdminComunicados />} />
             <Route path="config" element={<AdminConfig />} />
             <Route path="mas" element={<AdminMas />} />
+          </Route>
+          <Route path="/super" element={<SuperShell />}>
+            <Route index element={<SuperDashboard />} />
+            <Route path="gimnasios" element={<SuperGimnasios />} />
+            <Route path="gimnasios/crear" element={<SuperCrearGym />} />
+            <Route path="gimnasios/:id" element={<SuperDetalleGym />} />
+            <Route path="pagos" element={<SuperPagos />} />
           </Route>
         </Routes>
       </BrowserRouter>
