@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import TabBar from '../../components/TabBar'
+import InstallPrompt from '../../components/InstallPrompt'
 
 export default function ClienteShell() {
   return (
@@ -7,6 +8,7 @@ export default function ClienteShell() {
       <main style={{ flex: 1 }}>
         <Outlet />
       </main>
+      <InstallPrompt />
       <TabBar />
     </div>
   )

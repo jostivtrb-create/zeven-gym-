@@ -4,9 +4,9 @@
 > cuestionario y lo que queda pendiente. Sirve como guía si se cambia de conversación y
 > como checklist de repaso final antes de construir.
 
-**Última actualización:** 2026-07-28
-**Estado general:** 🟢 DEFINICIÓN COMPLETA — las 10 etapas del cuestionario están cerradas.
-**Siguiente paso:** diseño de la app en Claude Design.
+**Última actualización:** 2026-07-30
+**Estado general:** 🟢 DEFINICIÓN ✅ · DISEÑO ✅ · CONSTRUCCIÓN ✅ (v1 completa en local)
+**Siguiente paso:** despliegue a Vercel (único paso pendiente — ver sección 3d).
 
 **⚠️ Regla de trabajo (pedida por el dueño):** las preguntas deben definir TODO.
 Nada se asume, se adivina ni se improvisa. Si algo no está definido en este documento,
@@ -189,9 +189,29 @@ sub-preguntas solo donde aplique. Cada etapa cerrada se registra en la sección 
 1. ✅ **Diseño en Claude Design** — COMPLETADO el 2026-07-28 (ver sección 3c).
 2. 🟡 Construcción con React + Firebase + Vercel (PWA instalable — usar skill `instalar-app-mobil`).
    - ✅ Fase 1a: scaffold Vite+React, tokens de diseño (`src/styles/tokens.css`), theming dinámico por gym (`ThemeContext`), arquitectura de datos (`ARQUITECTURA.md`), git iniciado. Verificado en preview.
-   - 🟠 Fase 1b: llaves reales de Firebase YA conectadas en `src/firebase.js` (proyecto `zeven-gym`). PENDIENTE: activar en la consola Firestore, Authentication (Google + correo) y Storage.
-   - 🟡 Fase 2 (cliente): ✅ shell con TabBar de 5 pestañas + ✅ Portada del gimnasio (verificada vs diseño, con aviso de vencimiento derivado por fechas). ⬜ Mi rutina · ⬜ Mi progreso · ⬜ Calculadoras · ⬜ Perfil · ⬜ Entrada/registro/login.
-   - ⬜ Fase 3: admin · ⬜ Fase 4: superadmin · ⬜ Fase 5: PWA + deploy.
+   - ✅ Fase 1b: Firebase real conectado (proyecto `zeven-gym`); Firestore, Auth (Google+correo) y Storage activados.
+   - ✅ Fase 2 (cliente): portada, rutina (marcar/pesos/bloqueo), progreso (racha/gráficas/medidas/fotos), calculadoras, perfil, bienvenida con código (+ link /g/:codigo), registro y login REALES.
+   - ✅ Fase 3 (admin): dashboard, clientes+detalle, pagos, planes, rutinas+editor, comunicados, configuración, popup de suscripción (suave/urgente), menú Más.
+   - ✅ Fase 4 (superadmin): dashboard global, gimnasios+detalle, crear gimnasio (escribe en Firestore real + invita admin), pagos plataforma, modo soporte con banner.
+   - ✅ Fase 5a: Auth real popup-first con fallback redirect, persistencia localStorage, bootstrap de roles (ver 3d), capa de datos con fallback demo.
+   - ✅ Fase 5b: reglas de Firestore y Storage DESPLEGADAS a producción (cuenta jostivtrb@gmail.com).
+   - ✅ Fase 5c: PWA instalable (manifest, sw.js red-primero con offline, InstallPrompt Android/iOS, íconos Z) y verificación en navegador.
+
+## 3d. Cómo funciona el arranque real (bootstrap) + despliegue pendiente
+
+**Roles automáticos al primer login:**
+- `jostivtrb@gmail.com` entra con Google → su perfil se crea SOLO como **superadmin** → /super.
+- Un correo invitado (creado al usar "Crear gimnasio") → entra y su perfil se crea como **admin** de su gym → /admin.
+- Cualquier otro → se registra como **cliente** con el código de su gym → /app.
+
+**Flujo real de venta:** entras a /super → Crear gimnasio (nombre, ciudad, color, datos del dueño) → Firestore guarda el gym + invitación → le compartes código/link al dueño → él entra con su correo y ya es admin → sus clientes se registran con el código.
+
+**ÚNICO PASO PENDIENTE — Despliegue a Vercel (hacerlo con el dueño):**
+1. Crear el repo `zeven-gym` en GitHub con la cuenta jostivtrb (usuario `jostivtrb-create`) — la llave SSH ya existe (`github-jostivtrb` en ~/.ssh/config).
+2. `git remote add origin git@github-jostivtrb:jostivtrb-create/zeven-gym.git && git push -u origin main`
+3. En vercel.com (cuenta jostivtrb): Import → zeven-gym → deploy (Vite autodetectado).
+4. En Firebase Console → Authentication → Settings → Authorized domains: agregar `zeven-gym.vercel.app` (si no, el login con Google falla en producción).
+⚠️ La gh CLI local está logueada con OTRA cuenta (Infiniity-Eventos) — NO usarla para este repo.
 3. Todo lo definido entra en la v1; ritmo sin afán, prioridad en pulir cada detalle.
 4. Pendientes que NO bloquean: logo de Zeven Gym (se creará más adelante), dominio propio.
 
