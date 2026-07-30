@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { PALETA_GYMS } from '../../data/demoSuper'
+import { PALETA_GYMS } from '../../data/constantes'
 import { crearGimnasio } from '../../services/db'
 
 const seccion = { fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-3)' }

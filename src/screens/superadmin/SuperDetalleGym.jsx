@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { listarGimnasios, actualizarSuscripcionGym } from '../../services/db'
 import { useGym } from '../../context/ThemeContext'
-import { ESTADOS_GYM } from '../../data/demoSuper'
+import { ESTADOS_GYM } from '../../data/constantes'
 
 const seccion = { fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-3)' }
 const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }

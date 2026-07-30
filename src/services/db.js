@@ -372,3 +372,13 @@ export function calcularRacha(progreso) {
   }
   return { actual: racha, mejor, entrenos: dias.size }
 }
+
+export async function obtenerMembresia(gymId, uid) {
+  try {
+    const s = await getDoc(doc(db, 'gimnasios', gymId, 'membresias', uid))
+    return s.exists() ? s.data() : null
+  } catch (e) {
+    console.warn('obtenerMembresia:', e.code ?? e.message)
+    return null
+  }
+}

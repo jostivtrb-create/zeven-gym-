@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { demoSuscripcionGym } from '../../data/demoAdmin'
 import { useGym } from '../../context/ThemeContext'
+import { useAuth } from '../../context/AuthContext'
+import { derivarSuscripcion } from '../../services/db'
 
 const tabs = [
   { to: '/admin', end: true, label: 'Inicio', icon: <path d="M4 11 L12 4 L20 11 V20 H4 Z" /> },
@@ -39,10 +40,28 @@ const tabs = [
 
 function AvisoSuscripcion() {
   const [cerrado, setCerrado] = useState(false)
-  const { diasAtraso, monto } = demoSuscripcionGym
-  if (diasAtraso <= 0 || cerrado) return null
-  const restantes = 7 - diasAtraso
-  const urgente = restantes <= 3
+  const { gym, soporte } = useGym()
+  const { perfil } = useAuth()
+  if (!gym.id || soporte || perfil?.rol === 'superadmin') return null
+
+  const s = derivarSuscripcion(gym)
+
+  if (s.estado === 'suspendido') {
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(28,28,26,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', padding: 22, maxWidth: 360, width: '100%', textAlign: 'center', boxShadow: 'var(--shadow-pop)' }}>
+          <div style={{ width: 44, height: 44, borderRadius: 99, margin: '0 auto 10px', background: 'var(--danger-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🔒</div>
+          <div style={{ fontSize: 15, fontWeight: 600 }}>Tu suscripción está suspendida</div>
+          <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.5 }}>
+            Ponte al día con Zeven Gym ($79.000/mes) y reactivamos tu panel y el acceso de tus clientes de inmediato. Escríbenos y lo resolvemos hoy mismo.
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (s.estado !== 'gracia' || cerrado) return null
+  const urgente = s.diasGracia <= 3
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(28,28,26,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
@@ -51,21 +70,16 @@ function AvisoSuscripcion() {
           {urgente ? '⏰' : '👋'}
         </div>
         <div style={{ fontSize: 15, fontWeight: 600 }}>
-          {urgente ? `Quedan ${restantes} día${restantes === 1 ? '' : 's'} para renovar` : 'Debes pagar la suscripción'}
+          {urgente ? `Quedan ${s.diasGracia} día${s.diasGracia === 1 ? '' : 's'} para renovar` : 'Debes pagar la suscripción'}
         </div>
         <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.5 }}>
           {urgente
-            ? `Tu suscripción de Zeven Gym ($${monto.toLocaleString('es-CO')}/mes) venció hace ${diasAtraso} días. Para no interrumpir el servicio de tu gimnasio y tus clientes, renueva hoy.`
-            : `Tu suscripción de Zeven Gym ($${monto.toLocaleString('es-CO')}/mes) venció ayer. Tienes ${restantes} días para ponerte al día — tu panel sigue funcionando normal.`}
+            ? `Tu suscripción de Zeven Gym ($79.000/mes) está vencida. Para no interrumpir el servicio de tu gimnasio y tus clientes, renueva hoy.`
+            : `Tu suscripción de Zeven Gym ($79.000/mes) venció. Tienes ${s.diasGracia} días para ponerte al día — tu panel sigue funcionando normal.`}
         </div>
         <button onClick={() => setCerrado(true)} style={{ marginTop: 14, width: '100%', background: urgente ? 'var(--danger)' : 'var(--zeven-dark)', color: '#fff', borderRadius: 'var(--radius)', padding: '11px 0', fontSize: 13, fontWeight: 600 }}>
-          {urgente ? 'Renovar ahora' : 'Entendido'}
+          Entendido
         </button>
-        {!urgente && (
-          <button onClick={() => setCerrado(true)} style={{ marginTop: 8, fontSize: 11.5, color: 'var(--text-3)' }}>
-            Cerrar
-          </button>
-        )}
       </div>
     </div>
   )

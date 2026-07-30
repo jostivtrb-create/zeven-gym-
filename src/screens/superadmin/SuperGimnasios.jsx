@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { listarGimnasios } from '../../services/db'
-import { ESTADOS_GYM } from '../../data/demoSuper'
+import { ESTADOS_GYM } from '../../data/constantes'
 
 const MES = new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric' })
 

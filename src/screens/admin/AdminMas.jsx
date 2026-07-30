@@ -1,5 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { useGym } from '../../context/ThemeContext'
+import { derivarSuscripcion } from '../../services/db'
+
+const ESTADOS_SUS = {
+  activo: { texto: 'Al día', color: '#166534', bg: '#dcfce7' },
+  prueba: { texto: 'Prueba', color: '#1e40af', bg: '#dbeafe' },
+  gracia: { texto: 'Renovar', color: '#92400e', bg: '#fef3c7' },
+  suspendido: { texto: 'Suspendida', color: '#6b7280', bg: '#f3f4f6' },
+}
 
 const OPCIONES = [
   { ruta: '/admin/pagos', titulo: 'Pagos', detalle: 'Vencidos y por vencer, registrar pagos', icono: <><rect x="3" y="6" width="18" height="13" rx="2" /><line x1="3" y1="10" x2="21" y2="10" /></> },
@@ -11,6 +19,16 @@ const OPCIONES = [
 export default function AdminMas() {
   const navigate = useNavigate()
   const { gym } = useGym()
+  const s = derivarSuscripcion(gym)
+  const es = ESTADOS_SUS[s.estado]
+  const detalleSus =
+    s.estado === 'prueba'
+      ? `$79.000/mes · prueba gratis · quedan ${s.diasPrueba} días`
+      : s.estado === 'gracia'
+        ? `$79.000/mes · vencida · quedan ${s.diasGracia} días de gracia`
+        : s.estado === 'suspendido'
+          ? '$79.000/mes · suspendida por falta de pago'
+          : `$79.000/mes · al día${gym.suscripcion?.proximoCorte?.toDate ? ` · próximo corte: ${new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short' }).format(gym.suscripcion.proximoCorte.toDate())}` : ''}`
 
   return (
     <>
@@ -37,9 +55,9 @@ export default function AdminMas() {
           <div style={{ width: 34, height: 34, borderRadius: 'var(--radius-sm)', background: 'var(--zeven-dark)', color: '#fff', fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>Z</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 12.5, fontWeight: 600 }}>Suscripción Zeven Gym</div>
-            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>$79.000/mes · al día · próximo corte: 15 ago</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{detalleSus}</div>
           </div>
-          <span style={{ fontSize: 10.5, fontWeight: 600, color: '#166534', background: '#dcfce7', borderRadius: 99, padding: '3px 9px' }}>Al día</span>
+          <span style={{ fontSize: 10.5, fontWeight: 600, color: es.color, background: es.bg, borderRadius: 99, padding: '3px 9px' }}>{es.texto}</span>
         </div>
 
         <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginTop: 4 }}>

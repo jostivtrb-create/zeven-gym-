@@ -53,7 +53,7 @@ export default function App() {
             <Route path="pagos" element={<AdminPagos />} />
             <Route path="planes" element={<AdminPlanes />} />
             <Route path="rutinas" element={<AdminRutinas />} />
-            <Route path="rutinas/editor" element={<AdminEditorRutina />} />
+            <Route path="rutinas/editor/:id" element={<AdminEditorRutina />} />
             <Route path="comunicados" element={<AdminComunicados />} />
             <Route path="config" element={<AdminConfig />} />
             <Route path="mas" element={<AdminMas />} />
