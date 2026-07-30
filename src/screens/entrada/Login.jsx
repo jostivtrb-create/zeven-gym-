@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGym } from '../../context/ThemeContext'
+import { useAuth } from '../../context/AuthContext'
+import { rutaPorRol } from '../../services/db'
 
 const campo = { background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius)', padding: '11px 14px' }
 const inputStyle = { width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 13.5, fontWeight: 500, padding: 0, marginTop: 1 }
@@ -8,14 +10,62 @@ const inputStyle = { width: '100%', border: 'none', outline: 'none', background:
 export default function Login() {
   const navigate = useNavigate()
   const { gym } = useGym()
+  const { entrarConCorreo, entrarConGoogle, recuperarClave, recargarPerfil } = useAuth()
   const [correo, setCorreo] = useState('')
   const [clave, setClave] = useState('')
+  const [error, setError] = useState('')
+  const [aviso, setAviso] = useState('')
+  const [ocupado, setOcupado] = useState(false)
 
   const iniciales = gym.nombre.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()
 
-  const entrar = () => {
-    // Fase 5a: signInWithEmailAndPassword; el rol define a dónde va (/app, /admin, /super)
-    navigate('/app')
+  const irSegunRol = async () => {
+    const perfil = await recargarPerfil()
+    navigate(rutaPorRol(perfil))
+  }
+
+  const entrar = async () => {
+    if (!correo || !clave) {
+      setError('Escribe tu correo y contraseña.')
+      return
+    }
+    setOcupado(true)
+    setError('')
+    try {
+      await entrarConCorreo(correo.trim(), clave)
+      await irSegunRol()
+    } catch {
+      setError('Correo o contraseña incorrectos. Inténtalo de nuevo.')
+    } finally {
+      setOcupado(false)
+    }
+  }
+
+  const conGoogle = async () => {
+    setOcupado(true)
+    setError('')
+    try {
+      const cred = await entrarConGoogle()
+      if (cred?.user) await irSegunRol()
+    } catch {
+      setError('No pudimos conectar con Google. Inténtalo de nuevo.')
+    } finally {
+      setOcupado(false)
+    }
+  }
+
+  const olvido = async () => {
+    if (!correo) {
+      setError('Escribe tu correo arriba y vuelve a tocar aquí.')
+      return
+    }
+    try {
+      await recuperarClave(correo.trim())
+      setAviso('Te enviamos un correo para recuperar tu contraseña.')
+      setError('')
+    } catch {
+      setError('No pudimos enviar el correo. Revisa que esté bien escrito.')
+    }
   }
 
   return (
@@ -37,19 +87,21 @@ export default function Login() {
           <div style={{ fontSize: 10, color: 'var(--text-3)' }}>Contraseña</div>
           <input type="password" value={clave} onChange={(e) => setClave(e.target.value)} placeholder="••••••••" style={inputStyle} />
         </div>
-        <button style={{ textAlign: 'right', fontSize: 11.5, fontWeight: 500, color: 'var(--gym-color)' }}>¿Olvidaste tu contraseña?</button>
+        <button onClick={olvido} style={{ textAlign: 'right', fontSize: 11.5, fontWeight: 500, color: 'var(--gym-color)' }}>¿Olvidaste tu contraseña?</button>
+        {error && <div style={{ fontSize: 11.5, color: 'var(--danger)' }}>{error}</div>}
+        {aviso && <div style={{ fontSize: 11.5, color: 'var(--gym-color)' }}>{aviso}</div>}
       </div>
 
       <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <button onClick={entrar} style={{ background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-md)', padding: '14px 0', textAlign: 'center', fontSize: 14, fontWeight: 600 }}>
-          Entrar
+        <button onClick={entrar} disabled={ocupado} style={{ background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-md)', padding: '14px 0', textAlign: 'center', fontSize: 14, fontWeight: 600, opacity: ocupado ? 0.7 : 1 }}>
+          {ocupado ? 'Entrando…' : 'Entrar'}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, height: 1, background: '#e6e6e2' }} />
           <span style={{ fontSize: 11, color: '#a8a8a4' }}>o</span>
           <div style={{ flex: 1, height: 1, background: '#e6e6e2' }} />
         </div>
-        <button onClick={entrar} style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius-md)', padding: '13px 0', textAlign: 'center', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+        <button onClick={conGoogle} disabled={ocupado} style={{ background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius-md)', padding: '13px 0', textAlign: 'center', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
           <span style={{ width: 18, height: 18, borderRadius: 99, background: 'conic-gradient(#ea4335 0 25%, #fbbc05 25% 50%, #34a853 50% 75%, #4285f4 75% 100%)', display: 'inline-block' }} />
           Continuar con Google
         </button>

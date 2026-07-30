@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGym } from '../../context/ThemeContext'
+import { useAuth } from '../../context/AuthContext'
+import { crearPerfilCliente } from '../../services/db'
 
 const campo = { background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius)', padding: '11px 14px' }
 const inputStyle = { width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 13.5, fontWeight: 500, padding: 0, marginTop: 1 }
@@ -17,25 +19,66 @@ function Campo({ label, type = 'text', value, onChange, flex, placeholder, input
 export default function Registro() {
   const navigate = useNavigate()
   const { gym } = useGym()
+  const { crearCuentaCorreo, entrarConGoogle } = useAuth()
   const [form, setForm] = useState({ nombre: '', celular: '', documento: '', nacimiento: '', correo: '', clave: '' })
   const [error, setError] = useState('')
+  const [ocupado, setOcupado] = useState(false)
   const set = (k) => (v) => setForm({ ...form, [k]: v })
 
   const iniciales = gym.nombre.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()
 
-  const crearCuenta = () => {
+  const MENSAJES = {
+    'auth/email-already-in-use': 'Ese correo ya tiene cuenta. Prueba iniciar sesión.',
+    'auth/invalid-email': 'Revisa el correo, parece incompleto.',
+    'auth/weak-password': 'La contraseña necesita mínimo 6 caracteres.',
+  }
+
+  const guardarPerfil = async (uid, datos) => {
+    try {
+      await crearPerfilCliente(uid, { gymId: gym.id, ...datos })
+    } catch (e) {
+      console.warn('perfil no guardado aún (reglas pendientes):', e.code ?? e.message)
+    }
+  }
+
+  const crearCuenta = async () => {
     if (!form.nombre || !form.celular || !form.documento || !form.nacimiento || !form.correo || form.clave.length < 6) {
       setError('Completa todos los campos (la contraseña necesita mínimo 6 caracteres).')
       return
     }
-    // Fase 5a: createUserWithEmailAndPassword + doc usuarios/{uid} con gymId
-    localStorage.setItem('zg-registro', JSON.stringify(form))
-    navigate('/app')
+    setOcupado(true)
+    setError('')
+    try {
+      const cred = await crearCuentaCorreo(form.correo.trim(), form.clave)
+      await guardarPerfil(cred.user.uid, { nombre: form.nombre.trim(), celular: form.celular.trim(), documento: form.documento.trim(), nacimiento: form.nacimiento, correo: form.correo.trim() })
+      navigate('/app')
+    } catch (e) {
+      setError(MENSAJES[e.code] ?? 'No pudimos crear la cuenta. Inténtalo de nuevo.')
+    } finally {
+      setOcupado(false)
+    }
   }
 
-  const conGoogle = () => {
-    // Fase 5a: signInWithPopup(googleProvider) + completar datos faltantes
-    navigate('/app')
+  const conGoogle = async () => {
+    setOcupado(true)
+    setError('')
+    try {
+      const cred = await entrarConGoogle()
+      if (cred?.user) {
+        await guardarPerfil(cred.user.uid, {
+          nombre: form.nombre.trim() || cred.user.displayName || '',
+          celular: form.celular.trim(),
+          documento: form.documento.trim(),
+          nacimiento: form.nacimiento,
+          correo: cred.user.email,
+        })
+        navigate('/app')
+      }
+    } catch (e) {
+      setError('No pudimos conectar con Google. Inténtalo de nuevo.')
+    } finally {
+      setOcupado(false)
+    }
   }
 
   return (
@@ -74,8 +117,8 @@ export default function Registro() {
 
         {error && <div style={{ fontSize: 11.5, color: 'var(--danger)' }}>{error}</div>}
 
-        <button onClick={crearCuenta} style={{ background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-md)', padding: '14px 0', textAlign: 'center', fontSize: 14, fontWeight: 600 }}>
-          Crear cuenta
+        <button onClick={crearCuenta} disabled={ocupado} style={{ background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-md)', padding: '14px 0', textAlign: 'center', fontSize: 14, fontWeight: 600, opacity: ocupado ? 0.7 : 1 }}>
+          {ocupado ? 'Creando cuenta…' : 'Crear cuenta'}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, height: 1, background: '#e6e6e2' }} />

@@ -1,27 +1,38 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useGym } from '../../context/ThemeContext'
-import { demoGym } from '../../data/demo'
+import { buscarGymPorCodigo } from '../../services/db'
 
 export default function Bienvenida() {
   const navigate = useNavigate()
+  const { codigo: codigoUrl } = useParams()
   const { setGym } = useGym()
   const [codigo, setCodigo] = useState('')
   const [gymEncontrado, setGymEncontrado] = useState(null)
   const [error, setError] = useState(false)
+  const timer = useRef(null)
 
   const buscar = (valor) => {
     const limpio = valor.toUpperCase().replace(/\s/g, '')
     setCodigo(limpio)
     setError(false)
-    // Fase 5a: consulta a Firestore por codigo. Demo: TITAN26.
-    if (limpio === demoGym.codigo) {
-      setGymEncontrado(demoGym)
-      setGym(demoGym)
-    } else {
-      setGymEncontrado(null)
-    }
+    setGymEncontrado(null)
+    clearTimeout(timer.current)
+    if (limpio.length < 4) return
+    timer.current = setTimeout(async () => {
+      const gym = await buscarGymPorCodigo(limpio)
+      if (gym) {
+        setGymEncontrado(gym)
+        setGym(gym)
+      }
+    }, 350)
   }
+
+  useEffect(() => {
+    // Link directo del gym: /g/titan26
+    if (codigoUrl) buscar(codigoUrl)
+    return () => clearTimeout(timer.current)
+  }, [codigoUrl])
 
   const continuar = () => {
     if (!gymEncontrado) {

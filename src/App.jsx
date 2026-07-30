@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext'
+import { AuthProvider } from './context/AuthContext'
 import ClienteShell from './screens/cliente/ClienteShell'
 import Portada from './screens/cliente/Portada'
 import Rutina from './screens/cliente/Rutina'
@@ -30,9 +31,11 @@ import SuperPagos from './screens/superadmin/SuperPagos'
 export default function App() {
   return (
     <ThemeProvider>
+      <AuthProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Bienvenida />} />
+          <Route path="/g/:codigo" element={<Bienvenida />} />
           <Route path="/registro" element={<Registro />} />
           <Route path="/login" element={<Login />} />
           <Route path="/app" element={<ClienteShell />}>
@@ -63,6 +66,7 @@ export default function App() {
           </Route>
         </Routes>
       </BrowserRouter>
+      </AuthProvider>
     </ThemeProvider>
   )
 }
