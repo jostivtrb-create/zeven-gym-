@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { rutaPorRol } from '../../services/db'
+import { useGym } from '../../context/ThemeContext'
+import { auth } from '../../firebase'
+import { rutaPorRol, buscarGymPorCodigo, vincularGym } from '../../services/db'
 
 const campo = { background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius)', padding: '11px 14px' }
 const inputStyle = { width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 13.5, fontWeight: 500, padding: 0, marginTop: 1, fontFamily: 'inherit' }
@@ -18,6 +20,7 @@ const MENSAJES = {
 export default function Entrada() {
   const navigate = useNavigate()
   const { entrarConGoogle, entrarConCorreo, crearCuentaCorreo, recuperarClave, recargarPerfil } = useAuth()
+  const { setGym } = useGym()
   const [modo, setModo] = useState('entrar') // 'entrar' | 'crear'
   const [correo, setCorreo] = useState('')
   const [clave, setClave] = useState('')
@@ -25,10 +28,41 @@ export default function Entrada() {
   const [error, setError] = useState('')
   const [aviso, setAviso] = useState('')
   const [ocupado, setOcupado] = useState(false)
+  const [invitacion, setInvitacion] = useState(null) // gym del link/QR
+
+  // Si llegó por el link o el QR de un gimnasio, se recuerda para vincularlo
+  // automáticamente apenas cree su cuenta o inicie sesión.
+  useEffect(() => {
+    const codigo = sessionStorage.getItem('zg-codigo-invitacion')
+    if (!codigo) return
+    buscarGymPorCodigo(codigo).then((gym) => {
+      if (gym) {
+        setInvitacion(gym)
+        setGym(gym)
+        setModo('crear')
+      }
+    })
+  }, [])
 
   const seguir = async () => {
     const perfil = await recargarPerfil()
-    navigate(perfil?.gymId || perfil?.rol === 'superadmin' ? rutaPorRol(perfil) : '/vincular')
+
+    // Admin invitado o superadmin: directo a su panel, sin vincular como cliente
+    if (perfil?.rol === 'admin' || perfil?.rol === 'superadmin') {
+      navigate(rutaPorRol(perfil))
+      return
+    }
+
+    // Venía de un link/QR y aún no tiene gym: se vincula solo
+    if (invitacion && !perfil?.gymId && auth.currentUser) {
+      await vincularGym(auth.currentUser, invitacion, nombre.trim() ? { nombre: nombre.trim() } : {})
+      sessionStorage.removeItem('zg-codigo-invitacion')
+      const actualizado = await recargarPerfil()
+      navigate(rutaPorRol(actualizado))
+      return
+    }
+
+    navigate(perfil?.gymId ? rutaPorRol(perfil) : '/vincular')
   }
 
   const conGoogle = async () => {
@@ -87,11 +121,27 @@ export default function Entrada() {
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', padding: '72px 24px 32px', background: 'var(--bg)' }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ width: 64, height: 64, borderRadius: 18, background: 'var(--zeven-dark)', color: '#fff', fontSize: 28, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>Z</div>
-        <div style={{ fontSize: 22, fontWeight: 700, marginTop: 14, letterSpacing: '-.01em' }}>Zeven Gym</div>
-        <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 4 }}>
-          {modo === 'crear' ? 'Crea tu cuenta para empezar' : 'La app de tu gimnasio'}
-        </div>
+        {invitacion ? (
+          <>
+            <div style={{ width: 64, height: 64, borderRadius: 18, background: invitacion.branding?.color ?? 'var(--zeven-dark)', color: '#fff', fontSize: 24, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', overflow: 'hidden' }}>
+              {invitacion.branding?.logoUrl
+                ? <img src={invitacion.branding.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : invitacion.nombre.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()}
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 700, marginTop: 14, letterSpacing: '-.01em' }}>{invitacion.nombre}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 4 }}>
+              {modo === 'crear' ? 'Crea tu cuenta y quedas dentro del gym' : 'Inicia sesión y quedas dentro del gym'}
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ width: 64, height: 64, borderRadius: 18, background: 'var(--zeven-dark)', color: '#fff', fontSize: 28, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>Z</div>
+            <div style={{ fontSize: 22, fontWeight: 700, marginTop: 14, letterSpacing: '-.01em' }}>Zeven Gym</div>
+            <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 4 }}>
+              {modo === 'crear' ? 'Crea tu cuenta para empezar' : 'La app de tu gimnasio'}
+            </div>
+          </>
+        )}
       </div>
 
       <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -117,8 +167,8 @@ export default function Entrada() {
       </div>
 
       <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <button onClick={conCorreo} disabled={ocupado} style={{ background: 'var(--zeven-dark)', color: '#fff', borderRadius: 'var(--radius-md)', padding: '14px 0', textAlign: 'center', fontSize: 14, fontWeight: 600, opacity: ocupado ? 0.7 : 1 }}>
-          {ocupado ? 'Un momento…' : modo === 'crear' ? 'Crear cuenta' : 'Entrar'}
+        <button onClick={conCorreo} disabled={ocupado} style={{ background: invitacion ? 'var(--gym-color)' : 'var(--zeven-dark)', color: '#fff', borderRadius: 'var(--radius-md)', padding: '14px 0', textAlign: 'center', fontSize: 14, fontWeight: 600, opacity: ocupado ? 0.7 : 1 }}>
+          {ocupado ? 'Un momento…' : modo === 'crear' ? (invitacion ? `Crear cuenta y unirme` : 'Crear cuenta') : 'Entrar'}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, height: 1, background: '#e6e6e2' }} />

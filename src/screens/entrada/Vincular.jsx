@@ -44,7 +44,9 @@ export default function Vincular() {
   }
 
   useEffect(() => {
-    if (codigoUrl) buscar(codigoUrl)
+    // Código del link/QR, o el que quedó pendiente de una invitación
+    const pendiente = codigoUrl ?? sessionStorage.getItem('zg-codigo-invitacion')
+    if (pendiente) buscar(pendiente)
     return () => clearTimeout(timer.current)
   }, [codigoUrl])
 
@@ -55,6 +57,7 @@ export default function Vincular() {
       const nombreNuevo = sessionStorage.getItem('zg-nombre-nuevo')
       await vincularGym(usuario, encontrado, nombreNuevo ? { nombre: nombreNuevo } : {})
       sessionStorage.removeItem('zg-nombre-nuevo')
+      sessionStorage.removeItem('zg-codigo-invitacion')
       const p = await recargarPerfil()
       navigate(rutaPorRol(p), { replace: true })
     } catch (e) {
