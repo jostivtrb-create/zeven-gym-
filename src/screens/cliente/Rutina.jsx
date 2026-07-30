@@ -161,14 +161,23 @@ export default function Rutina() {
                   }}
                 >
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    <div style={{ width: 54, height: 54, borderRadius: 'var(--radius)', flex: 'none', background: ej.imagenUrl ? `center/cover url(${ej.imagenUrl})` : 'repeating-linear-gradient(45deg,#eef2f0 0 8px,#e5eae7 8px 16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '9px ui-monospace,monospace', color: '#8a938e' }}>
-                      {!ej.imagenUrl && 'gif'}
+                    <div
+                      onClick={(e) => {
+                        if (ej.imagenUrl) {
+                          e.stopPropagation()
+                          window.open(ej.imagenUrl, '_blank')
+                        }
+                      }}
+                      style={{ width: 54, height: 54, borderRadius: 'var(--radius)', flex: 'none', background: ej.imagenUrl ? `center/cover url(${ej.imagenUrl})` : 'color-mix(in oklab, var(--gym-color) 8%, white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, cursor: ej.imagenUrl ? 'zoom-in' : 'default' }}
+                    >
+                      {!ej.imagenUrl && '💪'}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13.5, fontWeight: 600 }}>{ej.nombre}</div>
                       <div style={{ fontSize: 11.5, color: 'var(--text-2)', marginTop: 2 }}>
                         {ej.series} × {ej.reps} · {ej.descansoSeg ?? ej.descanso} s descanso
                       </div>
+                      {ej.nota && <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 3, lineHeight: 1.4 }}>💡 {ej.nota}</div>}
                       {hecho && pesoHoy != null && (
                         <div style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 600, color: 'var(--gym-color)', background: '#fff', borderRadius: 99, padding: '2px 8px', marginTop: 6 }}>
                           Hoy: {pesoHoy} kg
