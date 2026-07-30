@@ -1,4 +1,5 @@
-import { collection, doc, getDoc, getDocs, query, where, limit, setDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, where, limit, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { getCountFromServer } from 'firebase/firestore'
 import { db } from '../firebase'
 import { demoGym } from '../data/demo'
 
@@ -97,6 +98,49 @@ export async function bootstrapPerfil(user, perfilExistente = null) {
     console.warn('bootstrapPerfil:', e.code ?? e.message)
   }
   return null
+}
+
+const DIA_MS = 86400000
+const aFecha = (t) => (t?.toDate ? t.toDate() : t ? new Date(t) : null)
+
+/* Deriva el estado visible de la suscripción de un gym a partir de sus fechas:
+   prueba (30 días) → gracia (7 días tras vencer) → suspendido. */
+export function derivarSuscripcion(gym) {
+  const s = gym.suscripcion ?? {}
+  const hoy = new Date()
+  if (s.estado === 'suspendido') return { estado: 'suspendido' }
+  if (s.estado === 'prueba') {
+    const inicio = aFecha(s.inicioPrueba) ?? hoy
+    const restantes = 30 - Math.floor((hoy - inicio) / DIA_MS)
+    if (restantes > 0) return { estado: 'prueba', diasPrueba: restantes }
+    const graciaRestante = 7 + restantes // días de gracia tras acabar la prueba
+    return graciaRestante > 0 ? { estado: 'gracia', diasGracia: graciaRestante } : { estado: 'suspendido' }
+  }
+  const corte = aFecha(s.proximoCorte)
+  if (corte && corte < hoy) {
+    const atraso = Math.floor((hoy - corte) / DIA_MS)
+    return atraso <= 7 ? { estado: 'gracia', diasGracia: 7 - atraso } : { estado: 'suspendido' }
+  }
+  return { estado: 'activo' }
+}
+
+export async function listarGimnasios() {
+  const snap = await getDocs(collection(db, 'gimnasios'))
+  return Promise.all(
+    snap.docs.map(async (d) => {
+      const gym = { id: d.id, ...d.data() }
+      let clientes = 0
+      try {
+        const c = await getCountFromServer(query(collection(db, 'usuarios'), where('gymId', '==', d.id)))
+        clientes = c.data().count
+      } catch { /* sin permiso de conteo aún: se muestra 0 */ }
+      return { ...gym, ...derivarSuscripcion(gym), clientes }
+    })
+  )
+}
+
+export async function actualizarSuscripcionGym(gymId, suscripcion) {
+  await updateDoc(doc(db, 'gimnasios', gymId), { suscripcion })
 }
 
 export async function crearGimnasio({ nombre, ciudad, color, admin }) {
