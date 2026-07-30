@@ -84,10 +84,21 @@ export default function SuperCrearGym() {
               {PALETA_GYMS.map((c) => (
                 <button key={c} onClick={() => setColor(c)} aria-label={`Color ${c}`} style={{ width: 34, height: 34, borderRadius: 'var(--radius-sm)', background: c, outline: color === c ? '2.5px solid var(--zeven-dark)' : 'none', outlineOffset: 2 }} />
               ))}
-              <label style={{ width: 34, height: 34, borderRadius: 'var(--radius-sm)', border: '1.5px dashed #c9c9c5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: '#a8a8a4', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
-                +
-                <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
-              </label>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+              <div style={{ width: 26, height: 26, borderRadius: 7, background: color, flex: 'none', border: '1px solid var(--border-2)' }} />
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>o escribe el color de su marca:</span>
+              <input
+                value={color}
+                onChange={(e) => {
+                  let v = e.target.value.trim()
+                  if (v && !v.startsWith('#')) v = '#' + v
+                  setColor(v.slice(0, 7))
+                }}
+                placeholder="#16a34a"
+                maxLength={7}
+                style={{ flex: 1, minWidth: 0, border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '7px 10px', fontSize: 12.5, fontWeight: 600, outline: 'none', fontFamily: 'ui-monospace, monospace', textTransform: 'lowercase' }}
+              />
             </div>
             <div style={{ marginTop: 12, border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
               <div style={{ background: color, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>

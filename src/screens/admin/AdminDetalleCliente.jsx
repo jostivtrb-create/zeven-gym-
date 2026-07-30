@@ -4,6 +4,7 @@ import { useGym } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 import { obtenerCliente, listarPlanes, listarPagosCliente, listarRutinas, registrarPago, congelarMembresia, actualizarUsuario, eliminarCliente, asignarRutina, desvincularGym, calcularVencimiento, actualizarVencimiento, aISO, deISO } from '../../services/db'
 import { ESTADOS, iniciales } from './AdminClientes'
+import SelectorFecha from '../../components/SelectorFecha'
 
 const seccionTitulo = { fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-3)' }
 const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }
@@ -175,7 +176,9 @@ export default function AdminDetalleCliente() {
                   <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.5 }}>
                     Ajústalo si ya venía pagando otro día. De ahí en adelante se mantiene solo.
                   </div>
-                  <input type="date" value={fechaVence} onChange={(e) => setFechaVence(e.target.value)} style={{ width: '100%', marginTop: 8, border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: 13, fontWeight: 600, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', background: '#fff' }} />
+                  <div style={{ marginTop: 8 }}>
+                    <SelectorFecha valor={fechaVence} onChange={setFechaVence} />
+                  </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                     <button onClick={guardarFecha} disabled={ocupado} style={{ flex: 1, background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '10px 0', fontSize: 12.5, fontWeight: 600 }}>
                       {ocupado ? 'Guardando…' : 'Guardar fecha'}
@@ -204,7 +207,9 @@ export default function AdminDetalleCliente() {
                 <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.5 }}>
                   Cámbialo si el cliente ya venía pagando otro día del mes. Las próximas renovaciones respetan esta fecha.
                 </div>
-                <input type="date" value={fechaVence} onChange={(e) => setFechaVence(e.target.value)} style={{ width: '100%', marginTop: 8, border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: 13, fontWeight: 600, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', background: '#fff' }} />
+                <div style={{ marginTop: 8 }}>
+                  <SelectorFecha valor={fechaVence} onChange={setFechaVence} />
+                </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                   <button onClick={cobrar} disabled={ocupado} style={{ flex: 1, background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '11px 0', fontSize: 12.5, fontWeight: 600, opacity: ocupado ? 0.6 : 1 }}>
                     {ocupado ? 'Guardando…' : 'Confirmar pago'}
