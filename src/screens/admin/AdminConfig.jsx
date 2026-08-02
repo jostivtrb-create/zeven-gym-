@@ -29,6 +29,8 @@ export default function AdminConfig() {
   const { gym, setGym } = useGym()
   const [politicas, setPoliticas] = useState({ vigencia: 'desde_pago', permitirCongelar: true, bloquearAlVencer: false, ...gym.politicas })
   const [branding, setBranding] = useState(gym.branding ?? { color: '#16a34a', logoUrl: null, bannerUrl: null })
+  const [nombre, setNombre] = useState(gym.nombre ?? '')
+  const [ciudad, setCiudad] = useState(gym.ciudad ?? '')
   const [contacto, setContacto] = useState({ celular: '', instagram: '', direccion: '', ...gym.contacto })
   const [horarios, setHorarios] = useState(
     gym.horarios?.length
@@ -53,6 +55,8 @@ export default function AdminConfig() {
     setGuardando(true)
     try {
       const campos = { contacto, horarios, politicas, branding }
+      if (nombre.trim()) campos.nombre = nombre.trim()
+      campos.ciudad = ciudad.trim()
       await actualizarGymCampos(gym.id, campos)
       setGym({ ...gym, ...campos })
       setGuardado(true)
@@ -81,7 +85,13 @@ export default function AdminConfig() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={seccion}>Identidad de tu gimnasio</div>
-          <IdentidadGym gym={{ ...gym, branding }} onChange={(b) => { setBranding(b); setGuardado(false) }} />
+          <div style={{ ...card, padding: '2px 14px' }}>
+            <div style={{ borderBottom: '1px solid #f2f2f0' }}>
+              <Fila etiqueta="Nombre del gimnasio" valor={nombre} onChange={(v) => { setNombre(v); setGuardado(false) }} placeholder="Ej: Titán Gym" />
+            </div>
+            <Fila etiqueta="Ciudad" valor={ciudad} onChange={(v) => { setCiudad(v); setGuardado(false) }} placeholder="Ej: Bogotá" />
+          </div>
+          <IdentidadGym gym={{ ...gym, nombre: nombre || gym.nombre, branding }} onChange={(b) => { setBranding(b); setGuardado(false) }} />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
