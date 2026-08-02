@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useGym } from '../../context/ThemeContext'
+import { useAuth } from '../../context/AuthContext'
 import { derivarSuscripcion } from '../../services/db'
 
 const ESTADOS_SUS = {
@@ -20,6 +21,15 @@ const OPCIONES = [
 export default function AdminMas() {
   const navigate = useNavigate()
   const { gym } = useGym()
+  const { perfil, salir } = useAuth()
+
+  const cerrarSesion = async () => {
+    try {
+      await salir()
+    } finally {
+      location.href = '/'
+    }
+  }
   const s = derivarSuscripcion(gym)
   const es = ESTADOS_SUS[s.estado]
   const detalleSus =
@@ -64,6 +74,20 @@ export default function AdminMas() {
         <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginTop: 4 }}>
           Código de tu gym para nuevos clientes: <b style={{ letterSpacing: '.1em' }}>{gym.codigo}</b>
         </div>
+
+        <div style={{ marginTop: 10, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '12px 14px' }}>
+          <div style={{ fontSize: 10, color: 'var(--text-3)' }}>Sesión iniciada como</div>
+          <div style={{ fontSize: 12.5, fontWeight: 600, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {perfil?.nombre || perfil?.correo}
+          </div>
+          {perfil?.nombre && perfil?.correo && (
+            <div style={{ fontSize: 11, color: 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{perfil.correo}</div>
+          )}
+        </div>
+
+        <button onClick={cerrarSesion} style={{ background: 'var(--surface)', border: '1px solid #f3d5d5', color: 'var(--danger)', borderRadius: 'var(--radius-md)', padding: '12px 0', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>
+          Cerrar sesión
+        </button>
       </div>
     </>
   )

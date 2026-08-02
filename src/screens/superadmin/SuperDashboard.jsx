@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 import { listarGimnasios } from '../../services/db'
 
 const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }
@@ -8,7 +9,16 @@ const MONTO = 79000
 
 export default function SuperDashboard() {
   const navigate = useNavigate()
+  const { perfil, salir } = useAuth()
   const [gimnasios, setGimnasios] = useState(null)
+
+  const cerrarSesion = async () => {
+    try {
+      await salir()
+    } finally {
+      location.href = '/'
+    }
+  }
 
   useEffect(() => {
     listarGimnasios()
@@ -85,6 +95,17 @@ export default function SuperDashboard() {
                 {enGracia.map((g) => `${g.nombre} (quedan ${g.diasGracia} días)`).join(' · ')}.
               </button>
             )}
+
+            <div style={{ ...card, padding: '12px 14px', marginTop: 4 }}>
+              <div style={{ fontSize: 10, color: 'var(--text-3)' }}>Sesión iniciada como</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {perfil?.correo}
+              </div>
+            </div>
+
+            <button onClick={cerrarSesion} style={{ background: 'var(--surface)', border: '1px solid #f3d5d5', color: 'var(--danger)', borderRadius: 'var(--radius-md)', padding: '12px 0', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>
+              Cerrar sesión
+            </button>
           </>
         )}
       </div>
