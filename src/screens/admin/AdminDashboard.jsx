@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGym } from '../../context/ThemeContext'
 import { listarClientes, listarPagosGym } from '../../services/db'
+import { COLORES_ESTADO } from '../../data/constantes'
 
 const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 16 }
 const pesos = (n) => '$' + Number(n).toLocaleString('es-CO')
@@ -112,17 +113,17 @@ export default function AdminDashboard() {
                   <div style={{ fontSize: 11.5, fontWeight: 600 }}>{lista.length} en total</div>
                 </div>
                 <div style={{ display: 'flex', height: 12, borderRadius: 99, overflow: 'hidden', marginTop: 10, background: '#f0f0ee' }}>
-                  <div style={{ width: pct(activos), background: 'var(--gym-color)' }} />
-                  <div style={{ width: pct(porVencer), background: '#fbbf24' }} />
-                  <div style={{ width: pct(vencidos), background: '#ef4444' }} />
-                  <div style={{ width: pct(congelados), background: '#94a3b8' }} />
+                  <div style={{ width: pct(activos), background: COLORES_ESTADO.activo }} />
+                  <div style={{ width: pct(porVencer), background: COLORES_ESTADO.por_vencer }} />
+                  <div style={{ width: pct(vencidos), background: COLORES_ESTADO.vencido }} />
+                  <div style={{ width: pct(congelados), background: COLORES_ESTADO.congelado }} />
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px', marginTop: 12, fontSize: 11.5 }}>
                   {[
-                    ['Activos', activos, 'var(--gym-color)'],
-                    ['Por vencer', porVencer, '#fbbf24'],
-                    ['Vencidos', vencidos, '#ef4444'],
-                    ['Congelados', congelados, '#94a3b8'],
+                    ['Activos', activos, COLORES_ESTADO.activo],
+                    ['Por vencer', porVencer, COLORES_ESTADO.por_vencer],
+                    ['Vencidos', vencidos, COLORES_ESTADO.vencido],
+                    ['Congelados', congelados, COLORES_ESTADO.congelado],
                   ].map(([nombre, n, color]) => (
                     <span key={nombre}>
                       <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 99, background: color, marginRight: 5 }} />
