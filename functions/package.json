@@ -1,0 +1,13 @@
+{
+  "name": "zeven-gym-functions",
+  "description": "Recordatorios automáticos de Zeven Gym",
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.1.1"
+  },
+  "private": true
+}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useGym } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 import { obtenerMembresia, listarPagosCliente, desvincularGym } from '../../services/db'
+import { activarNotificaciones, desactivarNotificaciones, notificacionesActivas, soportaNotificaciones } from '../../services/notificaciones'
 
 const seccionTitulo = { fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-3)' }
 const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }
@@ -18,6 +19,27 @@ export default function Perfil() {
   const [pagos, setPagos] = useState([])
   const [confirmandoSalida, setConfirmandoSalida] = useState(false)
   const [ocupado, setOcupado] = useState(false)
+  const [push, setPush] = useState({ soporta: false, activo: false, mensaje: '' })
+
+  useEffect(() => {
+    soportaNotificaciones().then((soporta) => setPush((p) => ({ ...p, soporta, activo: notificacionesActivas() })))
+  }, [])
+
+  const alternarPush = async () => {
+    if (push.activo) {
+      await desactivarNotificaciones(perfil.uid)
+      setPush((p) => ({ ...p, activo: false, mensaje: '' }))
+      return
+    }
+    const r = await activarNotificaciones(perfil.uid)
+    const motivos = {
+      denegado: 'Tu celular bloqueó las notificaciones. Actívalas en los ajustes del navegador.',
+      'sin-configurar': 'Los recordatorios aún no están habilitados por Zeven Gym.',
+      'no-soportado': 'Este navegador no admite notificaciones.',
+      'sin-token': 'No pudimos activarlas. Inténtalo de nuevo.',
+    }
+    setPush((p) => ({ ...p, activo: r.ok, mensaje: r.ok ? '' : motivos[r.motivo] ?? '' }))
+  }
 
   useEffect(() => {
     if (!gym.id || !perfil?.uid) return
@@ -151,6 +173,23 @@ export default function Perfil() {
             ))}
           </div>
         </div>
+
+        {push.soporta && (
+          <div style={{ ...card, padding: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600 }}>Recordatorio de pago</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5 }}>
+                  Un aviso amable en este celular un día antes de que venza tu plan.
+                </div>
+              </div>
+              <button onClick={alternarPush} aria-pressed={push.activo} style={{ width: 42, height: 24, borderRadius: 99, background: push.activo ? 'var(--gym-color)' : '#d6d6d2', position: 'relative', flex: 'none', transition: 'background .2s' }}>
+                <span style={{ position: 'absolute', top: 2, left: push.activo ? 20 : 2, width: 20, height: 20, borderRadius: 99, background: '#fff', transition: 'left .2s' }} />
+              </button>
+            </div>
+            {push.mensaje && <div style={{ fontSize: 11, color: 'var(--warning-text)', marginTop: 8 }}>{push.mensaje}</div>}
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={seccionTitulo}>Mi gimnasio</div>

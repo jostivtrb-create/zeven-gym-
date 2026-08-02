@@ -70,6 +70,10 @@ service cloud.firestore {
       match /logros/{logroId} {
         allow read, write: if autenticado() && request.auth.uid == uid;
       }
+      // Celulares donde recibe notificaciones (solo suyos; las funciones no pasan por reglas)
+      match /tokens/{token} {
+        allow read, write: if autenticado() && request.auth.uid == uid;
+      }
     }
 
     match /gimnasios/{gymId} {
