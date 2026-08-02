@@ -4,7 +4,7 @@
 > cuestionario y lo que queda pendiente. Sirve como guía si se cambia de conversación y
 > como checklist de repaso final antes de construir.
 
-**Última actualización:** 2026-07-30
+**Última actualización:** 2026-08-02
 **Estado general:** 🟢 DEFINICIÓN ✅ · DISEÑO ✅ · CONSTRUCCIÓN ✅ · DESPLEGADA EN VERCEL ✅ · 100% CONECTADA A FIRESTORE (cero demos)
 **Repo:** github.com/jostivtrb-create/zeven-gym- (cuenta jostivtrb, SSH `github-jostivtrb`)
 **Fase 6 (2026-07-30):** toda la app usa datos reales — planes, clientes, membresías, pagos (con renovación de vigencia por política), comunicados, configuración, rutinas con plantillas Zeven, progreso del cliente en la nube (sesiones, pesos, racha calculada, medidas, fotos privadas en Storage), avisos de suscripción derivados de fechas y suspensión bloqueante. Rutas protegidas por rol. Los archivos demo fueron eliminados.
@@ -103,7 +103,7 @@ sub-preguntas solo donde aplique. Cada etapa cerrada se registra en la sección 
 **B) Clientes → Gimnasio:**
 - **Modalidad:** la app SOLO registra y controla; el gimnasio cobra por sus propios medios (efectivo, Nequi, etc.) y marca "pagado" en la app.
 - **Comprobantes:** NO hay subida de comprobantes por parte del cliente.
-- **Recordatorios al cliente:** notificación push + aviso dentro de la app + correo. (Sin WhatsApp.)
+- **Recordatorios al cliente:** notificación push + aviso dentro de la app. _(El correo se descartó el 2026-08-02: el dueño prefirió solo notificación.)_
 - **Anticipación:** 1 día antes del vencimiento.
 - **Tono:** amable, tipo recordatorio — NO invasivo ni de "paga paga".
 
@@ -270,7 +270,7 @@ motivador, solo modo claro · PWA instalable.
 | 1 | ✅ RESUELTO (2026-08-02) — registro completo en `/g/CODIGO/registro`: foto, nombre, celular, documento y nacimiento, con la marca del gimnasio. | Etapa 4 | — |
 | 2 | ✅ RESUELTO (2026-08-02) — el admin sube logo y portada y elige su color desde Configuración, con vista previa en vivo. | Etapa 6 | — |
 | 3 | ⬜ El superadmin no puede editar el branding ni los datos de un gimnasio ya creado (el admin sí puede el suyo). | Etapa 3 (poder #4) | Bajo (el admin ya lo cubre) |
-| 4 | ⬜ **Notificaciones push y por correo** (recordatorio 1 día antes). Hoy solo el aviso dentro de la app. El dueño CONFIRMÓ que tiene plan Blaze. Falta elegir proveedor de correo. | Etapa 2 | Medio |
+| 4 | ✅ RESUELTO (2026-08-02) — **notificación push** 1 día antes, con función programada diaria (9:00 am Bogotá). El cliente la activa desde su Perfil. **El correo se descartó**: el dueño decidió solo notificación. | Etapa 2 | — |
 | 5 | ✅ RESUELTO (2026-08-02) — manifest dinámico `/api/manifest?g=CODIGO`: cada cliente instala la PWA con el nombre y el logo de SU gimnasio. | Etapa 10 | — |
 | 6 | ✅ RESUELTO (2026-08-02) — caché local de Firestore: el cliente ve su rutina y su progreso sin internet. Registro y panel de admin sí requieren conexión (decisión del dueño). | Etapa 10 | — |
 | 7 | ❌ DESCARTADO (2026-08-02) — botón de WhatsApp en la rutina en pausa: no se implementa. | — | — |

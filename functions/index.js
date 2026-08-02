@@ -4,34 +4,27 @@
 
 const { onSchedule } = require('firebase-functions/v2/scheduler')
 const { logger } = require('firebase-functions')
-const admin = require('firebase-admin')
+const { initializeApp } = require('firebase-admin/app')
+const { getFirestore, Timestamp } = require('firebase-admin/firestore')
+const { getMessaging } = require('firebase-admin/messaging')
 
-admin.initializeApp()
-const db = admin.firestore()
+initializeApp()
+const db = getFirestore()
 
 /* Rango [inicio, fin] del día de mañana en hora de Bogotá (UTC-5). */
 function mananaEnBogota() {
-  const ahora = new Date()
-  const bogota = new Date(ahora.getTime() - 5 * 3600 * 1000)
+  const bogota = new Date(Date.now() - 5 * 3600 * 1000)
   const inicio = new Date(Date.UTC(bogota.getUTCFullYear(), bogota.getUTCMonth(), bogota.getUTCDate() + 1, 5, 0, 0))
   const fin = new Date(inicio.getTime() + 24 * 3600 * 1000 - 1)
   return { inicio, fin }
 }
 
-async function tokensDe(uid) {
-  const snap = await db.collection('usuarios').doc(uid).collection('tokens').get()
-  return snap.docs.map((d) => d.id)
-}
-
-async function borrarToken(uid, token) {
-  await db.collection('usuarios').doc(uid).collection('tokens').doc(token).delete().catch(() => {})
-}
-
 async function avisar(uid, gym) {
-  const tokens = await tokensDe(uid)
+  const snap = await db.collection('usuarios').doc(uid).collection('tokens').get()
+  const tokens = snap.docs.map((d) => d.id)
   if (!tokens.length) return 0
 
-  const mensaje = {
+  const res = await getMessaging().sendEachForMulticast({
     notification: {
       title: gym.nombre ?? 'Tu gimnasio',
       body: 'Tu plan vence mañana. Renuévalo en recepción y sigue sin pausas 💪',
@@ -44,17 +37,14 @@ async function avisar(uid, gym) {
       fcmOptions: { link: '/app/perfil' },
     },
     tokens,
-  }
+  })
 
-  const res = await admin.messaging().sendEachForMulticast(mensaje)
-  // Limpia los tokens que ya no sirven (app desinstalada, permiso revocado…)
+  // Limpia los tokens muertos (app desinstalada, permiso revocado…)
   await Promise.all(
     res.responses.map((r, i) => {
       const codigo = r.error?.code
-      if (codigo === 'messaging/registration-token-not-registered' || codigo === 'messaging/invalid-argument') {
-        return borrarToken(uid, tokens[i])
-      }
-      return null
+      const muerto = codigo === 'messaging/registration-token-not-registered' || codigo === 'messaging/invalid-argument'
+      return muerto ? db.collection('usuarios').doc(uid).collection('tokens').doc(tokens[i]).delete().catch(() => {}) : null
     })
   )
   return res.successCount
@@ -74,8 +64,8 @@ exports.recordatoriosDiarios = onSchedule(
 
       const porVencer = await gymDoc.ref
         .collection('membresias')
-        .where('vence', '>=', admin.firestore.Timestamp.fromDate(inicio))
-        .where('vence', '<=', admin.firestore.Timestamp.fromDate(fin))
+        .where('vence', '>=', Timestamp.fromDate(inicio))
+        .where('vence', '<=', Timestamp.fromDate(fin))
         .get()
 
       for (const m of porVencer.docs) {
