@@ -136,7 +136,7 @@ sub-preguntas solo donde aplique. Cada etapa cerrada se registra en la sección 
 
 ### Etapa 6 — Branding multi-tenant ✅ (cerrada 2026-07-28)
 - **Se personaliza por gimnasio:** colores + logo + foto de portada/banner + datos de contacto y redes sociales + horarios del gimnasio.
-- **Colores:** los configura el SUPERADMIN al crear el gimnasio (con la identidad del gym). El admin NO los cambia.
+- **Colores:** los propone el superadmin al crear el gimnasio, pero **el ADMIN puede cambiar su logo, su portada y su color** desde Configuración. _(Decisión actualizada el 2026-08-02: antes solo el superadmin.)_
 - **Tema:** SOLO modo claro (no hay modo oscuro).
 - **Cuenta de cliente:** pertenece a UN solo gimnasio (no multi-gimnasio).
 - **Nombre de la plataforma:** **Zeven Gym** (separado, con espacio) — definido en Etapa 7.
@@ -267,13 +267,13 @@ motivador, solo modo claro · PWA instalable.
 
 | # | Qué falta | Definido en | Impacto |
 |---|-----------|-------------|---------|
-| 1 | El registro del cliente solo pide nombre, correo y clave. Faltan **celular, documento, fecha de nacimiento y foto de perfil** (se perdieron al rediseñar la entrada en el flujo login-primero). | Etapa 4 | Alto: el gym necesita el celular y el documento para identificar a su cliente. |
-| 2 | No se puede **subir el logo ni el banner** del gimnasio. El superadmin solo elige color; el botón "Cambiar portada" del admin no hace nada. | Etapa 6 | Alto: es la promesa de marca blanca. |
-| 3 | El superadmin **no puede editar el branding ni los datos** de un gimnasio ya creado. | Etapa 3 (poder #4) | Medio |
-| 4 | **Notificaciones push y por correo** (recordatorio 1 día antes). Hoy solo existe el aviso dentro de la app. | Etapa 2 | Medio. ⚠️ Requiere backend (Cloud Functions + plan Blaze de Firebase): un recordatorio programado no se puede enviar solo desde el celular. |
-| 5 | El **ícono de la PWA es el de Zeven** para todos; debía ser el logo de SU gimnasio. | Etapa 10 | Medio (depende del punto 2). |
-| 6 | La **rutina no está disponible sin internet**: el service worker cachea la app pero no los datos de Firestore. | Etapa 10 | Medio |
-| 7 | Decisión sin cerrar: botón **"Escribirle al gym por WhatsApp"** en la rutina en pausa (apareció en el diseño). | — | Bajo |
+| 1 | ✅ RESUELTO (2026-08-02) — registro completo en `/g/CODIGO/registro`: foto, nombre, celular, documento y nacimiento, con la marca del gimnasio. | Etapa 4 | — |
+| 2 | ✅ RESUELTO (2026-08-02) — el admin sube logo y portada y elige su color desde Configuración, con vista previa en vivo. | Etapa 6 | — |
+| 3 | ⬜ El superadmin no puede editar el branding ni los datos de un gimnasio ya creado (el admin sí puede el suyo). | Etapa 3 (poder #4) | Bajo (el admin ya lo cubre) |
+| 4 | ⬜ **Notificaciones push y por correo** (recordatorio 1 día antes). Hoy solo el aviso dentro de la app. El dueño CONFIRMÓ que tiene plan Blaze. Falta elegir proveedor de correo. | Etapa 2 | Medio |
+| 5 | ✅ RESUELTO (2026-08-02) — manifest dinámico `/api/manifest?g=CODIGO`: cada cliente instala la PWA con el nombre y el logo de SU gimnasio. | Etapa 10 | — |
+| 6 | ✅ RESUELTO (2026-08-02) — caché local de Firestore: el cliente ve su rutina y su progreso sin internet. Registro y panel de admin sí requieren conexión (decisión del dueño). | Etapa 10 | — |
+| 7 | ❌ DESCARTADO (2026-08-02) — botón de WhatsApp en la rutina en pausa: no se implementa. | — | — |
 
 ## 4. Ramas descartadas
 
