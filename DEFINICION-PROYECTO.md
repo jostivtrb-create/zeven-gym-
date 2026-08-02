@@ -5,7 +5,8 @@
 > como checklist de repaso final antes de construir.
 
 **Última actualización:** 2026-08-02
-**Estado general:** 🟢 DEFINICIÓN ✅ · DISEÑO ✅ · CONSTRUCCIÓN ✅ · DESPLEGADA EN VERCEL ✅ · 100% CONECTADA A FIRESTORE (cero demos)
+**Estado general:** 🟢 DEFINICIÓN ✅ · DISEÑO ✅ · CONSTRUCCIÓN ✅ · DESPLEGADA ✅ · TODO LO DEFINIDO CUMPLIDO
+**Único pendiente menor:** el superadmin no puede editar el branding de un gym ya creado (su admin sí puede el suyo).
 **Repo:** github.com/jostivtrb-create/zeven-gym- (cuenta jostivtrb, SSH `github-jostivtrb`)
 **Fase 6 (2026-07-30):** toda la app usa datos reales — planes, clientes, membresías, pagos (con renovación de vigencia por política), comunicados, configuración, rutinas con plantillas Zeven, progreso del cliente en la nube (sesiones, pesos, racha calculada, medidas, fotos privadas en Storage), avisos de suscripción derivados de fechas y suspensión bloqueante. Rutas protegidas por rol. Los archivos demo fueron eliminados.
 
@@ -269,7 +270,7 @@ motivador, solo modo claro · PWA instalable.
 |---|-----------|-------------|---------|
 | 1 | ✅ RESUELTO (2026-08-02) — registro completo en `/g/CODIGO/registro`: foto, nombre, celular, documento y nacimiento, con la marca del gimnasio. | Etapa 4 | — |
 | 2 | ✅ RESUELTO (2026-08-02) — el admin sube logo y portada y elige su color desde Configuración, con vista previa en vivo. | Etapa 6 | — |
-| 3 | ⬜ El superadmin no puede editar el branding ni los datos de un gimnasio ya creado (el admin sí puede el suyo). | Etapa 3 (poder #4) | Bajo (el admin ya lo cubre) |
+| 3 | ⬜ ÚNICO PENDIENTE — el superadmin no puede editar el branding ni los datos de un gimnasio ya creado (el admin sí puede el suyo desde Configuración). | Etapa 3 (poder #4) | Bajo |
 | 4 | ✅ RESUELTO (2026-08-02) — **notificación push** 1 día antes, con función programada diaria (9:00 am Bogotá). El cliente la activa desde su Perfil. **El correo se descartó**: el dueño decidió solo notificación. | Etapa 2 | — |
 | 5 | ✅ RESUELTO (2026-08-02) — manifest dinámico `/api/manifest?g=CODIGO`: cada cliente instala la PWA con el nombre y el logo de SU gimnasio. | Etapa 10 | — |
 | 6 | ✅ RESUELTO (2026-08-02) — caché local de Firestore: el cliente ve su rutina y su progreso sin internet. Registro y panel de admin sí requieren conexión (decisión del dueño). | Etapa 10 | — |
