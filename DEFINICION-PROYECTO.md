@@ -248,6 +248,33 @@ Se diseñó en 4 bloques, todos aprobados por el dueño:
 
 ---
 
+## 3e. REPASO FINAL — qué de lo definido falta (auditado el 2026-08-02)
+
+Contrastando las 10 etapas contra el código real en producción:
+
+**✅ Cumplido:** los 3 roles y sus paneles · plan único $79.000 con prueba 30 días,
+gracia 7 y avisos escalonados · alta de gimnasios solo por superadmin · login Google
+y correo · registro del cliente con código/link/QR · planes propios por gym ·
+vigencia configurable + día de pago editable · congelar · desactivar y eliminar ·
+rutinas por días con series/reps/descanso + peso sugerido · biblioteca de ejercicios
+con infografías heredadas del catálogo Zeven · marcar completados y registrar pesos ·
+racha, logros y gráficas · medidas y fotos de progreso privadas · calculadoras ·
+comunicados · estadísticas de admin y globales · modo soporte · suspender/reactivar ·
+confirmar pagos de plataforma · estética minimalista con color del gym, tono
+motivador, solo modo claro · PWA instalable.
+
+**⬜ PENDIENTE (7):**
+
+| # | Qué falta | Definido en | Impacto |
+|---|-----------|-------------|---------|
+| 1 | El registro del cliente solo pide nombre, correo y clave. Faltan **celular, documento, fecha de nacimiento y foto de perfil** (se perdieron al rediseñar la entrada en el flujo login-primero). | Etapa 4 | Alto: el gym necesita el celular y el documento para identificar a su cliente. |
+| 2 | No se puede **subir el logo ni el banner** del gimnasio. El superadmin solo elige color; el botón "Cambiar portada" del admin no hace nada. | Etapa 6 | Alto: es la promesa de marca blanca. |
+| 3 | El superadmin **no puede editar el branding ni los datos** de un gimnasio ya creado. | Etapa 3 (poder #4) | Medio |
+| 4 | **Notificaciones push y por correo** (recordatorio 1 día antes). Hoy solo existe el aviso dentro de la app. | Etapa 2 | Medio. ⚠️ Requiere backend (Cloud Functions + plan Blaze de Firebase): un recordatorio programado no se puede enviar solo desde el celular. |
+| 5 | El **ícono de la PWA es el de Zeven** para todos; debía ser el logo de SU gimnasio. | Etapa 10 | Medio (depende del punto 2). |
+| 6 | La **rutina no está disponible sin internet**: el service worker cachea la app pero no los datos de Firestore. | Etapa 10 | Medio |
+| 7 | Decisión sin cerrar: botón **"Escribirle al gym por WhatsApp"** en la rutina en pausa (apareció en el diseño). | — | Bajo |
+
 ## 4. Ramas descartadas
 
 - ❌ "Escalas" como planes de precios por niveles — era una mala interpretación; escalas = jerarquía de roles. La estructura real de cobro se define en Etapa 1.
