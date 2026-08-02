@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Propuesta · Zeven Gym</title>
+<style>
+/*FUENTES*/
+:root{
+  --verde:#16a34a; --verde-fuerte:#118040; --verde-suave:#4ade80;
+  --tinte:#E8F6EE; --tinta:#1C1C1A; --tinta-suave:#5F5E5A; --tenue:#9A9A94;
+  --bg:#FAFAF9; --papel:#FFFFFF; --superficie:#F4F6F4;
+  --linea:rgba(28,28,26,.09);
+  --grad:linear-gradient(125deg,#0F6E36 0%,#16a34a 48%,#3FBF6B 100%);
+  --oscuro:#1C1C1A;
+  --sans:'Poppins',system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+a{color:inherit;text-decoration:none;}
+@page{size:A4;margin:0;}
+html,body{background:var(--bg);}
+body{font-family:var(--sans);color:var(--tinta);-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.page{position:relative;width:210mm;height:297mm;overflow:hidden;background:var(--bg);page-break-after:always;display:flex;flex-direction:column;}
+.page:last-child{page-break-after:auto;}
+.pad{padding:12mm 15mm;flex:1;}
+
+.k{color:var(--verde-fuerte);font-size:8pt;letter-spacing:.26em;font-weight:800;text-transform:uppercase;}
+h2{font-weight:700;font-size:21pt;color:var(--tinta);line-height:1.12;margin-top:3px;letter-spacing:-.01em;}
+h3{font-size:11.5pt;font-weight:700;}
+p.body{font-size:10.4pt;line-height:1.62;color:var(--tinta-suave);}
+.mark{color:var(--verde-fuerte);font-weight:700;}
+.ink-b{color:var(--tinta);font-weight:700;}
+
+/* Portada */
+.banner{position:relative;background:var(--grad);color:#fff;padding:20mm 15mm 15mm;overflow:hidden;}
+.banner .eyebrow{font-size:8.5pt;letter-spacing:.3em;font-weight:700;text-transform:uppercase;opacity:.92;}
+.banner h1{font-weight:800;font-size:34pt;line-height:1.05;margin:10px 0 9px;letter-spacing:-.02em;}
+.banner .sub{font-size:12.5pt;font-weight:500;opacity:.95;max-width:122mm;line-height:1.45;}
+.pill{display:inline-block;border:1.3px solid rgba(255,255,255,.55);border-radius:999px;padding:7px 17px;font-size:7.6pt;letter-spacing:.2em;font-weight:700;text-transform:uppercase;margin-top:17px;}
+.logo{position:absolute;top:15mm;right:15mm;width:74px;height:74px;border-radius:20px;background:#fff;color:var(--verde-fuerte);font-size:34pt;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.22);}
+.swish{position:absolute;border-radius:999px;background:rgba(255,255,255,.16);}
+.swish.s1{width:130px;height:16px;top:34mm;right:-24px;transform:rotate(-42deg);}
+.swish.s2{width:84px;height:13px;top:49mm;right:26mm;transform:rotate(-42deg);}
+
+.card{border:1px solid var(--linea);border-radius:20px;padding:15px 18px;margin-top:13px;background:var(--papel);box-shadow:0 10px 26px rgba(17,128,64,.06);}
+.card.tinte{background:var(--tinte);border-color:rgba(17,128,64,.16);box-shadow:none;}
+.card-ti{font-size:11pt;font-weight:700;margin-bottom:7px;}
+
+ul.lista{list-style:none;margin-top:9px;}
+ul.lista li{position:relative;padding-left:19px;font-size:10.2pt;line-height:1.55;color:var(--tinta-suave);margin-bottom:7px;}
+ul.lista li::before{content:'';position:absolute;left:0;top:7px;width:8px;height:8px;border-radius:3px;background:var(--verde);}
+ul.check li::before{content:'✓';background:none;color:var(--verde-fuerte);font-weight:800;font-size:10pt;top:0;width:auto;height:auto;}
+
+.dos{display:flex;gap:11px;}
+.dos > *{flex:1;}
+.num{width:23px;height:23px;border-radius:8px;background:var(--verde);color:#fff;font-size:9.5pt;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-right:9px;flex:none;}
+.paso{display:flex;align-items:flex-start;margin-bottom:9px;font-size:10.2pt;line-height:1.5;color:var(--tinta-suave);}
+
+.precio-box{background:var(--oscuro);color:#fff;border-radius:22px;padding:19px 21px;margin-top:13px;}
+.precio{font-size:33pt;font-weight:800;letter-spacing:-.02em;line-height:1;}
+.precio small{font-size:11pt;font-weight:600;opacity:.75;letter-spacing:0;}
+.gratis{display:inline-block;background:var(--verde);color:#fff;border-radius:999px;padding:5px 14px;font-size:8pt;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-top:11px;}
+.fila{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--linea);font-size:10.2pt;}
+.fila:last-child{border-bottom:none;}
+.fila .et{color:var(--tinta-suave);}
+.fila .va{font-weight:600;text-align:right;}
+
+.cta{display:block;background:var(--grad);color:#fff;border-radius:16px;padding:15px 0;text-align:center;font-size:12.5pt;font-weight:700;margin-top:14px;box-shadow:0 10px 24px rgba(17,128,64,.24);}
+.cta.oscuro{background:var(--oscuro);box-shadow:0 10px 24px rgba(28,28,26,.2);}
+.pie{padding:0 15mm 9mm;font-size:8pt;color:var(--tenue);display:flex;justify-content:space-between;}
+.nota{font-size:9pt;color:var(--tenue);line-height:1.5;margin-top:8px;}
+.destacado{font-size:10.6pt;line-height:1.6;color:var(--tinta);}
+</style>
+</head>
+<body>
+
+<!-- ============ PÁGINA 1 ============ -->
+<section class="page">
+  <div class="banner">
+    <div class="logo">Z</div>
+    <div class="swish s1"></div><div class="swish s2"></div>
+    <div class="eyebrow">Zeven Gym</div>
+    <h1>Tu gimnasio,<br>en el celular<br>de tus clientes</h1>
+    <div class="sub">Con tu logo y tus colores. Controlas pagos y rutinas sin cuadernos, y tus clientes entrenan mejor.</div>
+    <div class="pill">App propia · Pagos · Rutinas</div>
+  </div>
+
+  <div class="pad">
+    <p class="body">
+      <span class="mark">Zeven Gym</span> le da a tu gimnasio <span class="ink-b">su propia aplicación</span>:
+      tus clientes se registran solos escaneando tu código, ven su rutina y saben cuándo pagar.
+      Tú ves <span class="ink-b">quién está al día y quién debe</span> desde tu celular, en cualquier momento.
+    </p>
+
+    <div class="card">
+      <div class="k">¿Por qué?</div>
+      <div class="card-ti">El problema que resuelve</div>
+      <ul class="lista">
+        <li>Llevas los pagos en un <span class="ink-b">cuaderno o un Excel</span>, y saber quién debe toma tiempo.</li>
+        <li>Se te <span class="ink-b">pasan los vencimientos</span>: el cliente entrena semanas sin pagar y da pena cobrarle.</li>
+        <li>Las rutinas van en <span class="ink-b">papel</span>: se pierden, se mojan, y toca volver a escribirlas.</li>
+        <li>El cliente <span class="ink-b">deja de venir</span> y te enteras un mes después.</li>
+        <li>Tu gimnasio se ve <span class="ink-b">menos profesional</span> que las cadenas grandes que sí tienen app.</li>
+      </ul>
+      <p class="destacado" style="margin-top:11px">
+        Zeven Gym reemplaza el cuaderno y el “¿ya pagaste?” por algo
+        <span class="mark">ordenado, automático y con tu marca</span>.
+      </p>
+    </div>
+
+    <div class="card tinte">
+      <div class="card-ti">🏋️ No es una app genérica: es <span class="mark">tu</span> app</div>
+      <p class="body">
+        Tus clientes la instalan en su celular y ven <span class="ink-b">tu logo en la pantalla de inicio</span> y
+        <span class="ink-b">tus colores</span> por dentro. No dice Zeven por ningún lado: dice el nombre de tu gimnasio.
+      </p>
+    </div>
+  </div>
+
+  <div class="pie"><span>Zeven Gym · La app de tu gimnasio</span><span>1</span></div>
+</section>
+
+<!-- ============ PÁGINA 2 ============ -->
+<section class="page">
+  <div class="pad">
+    <div class="k">Cómo funciona</div>
+    <h2>Sencillo para todos</h2>
+
+    <div class="card">
+      <div class="card-ti">Para tus clientes</div>
+      <div class="paso"><span class="num">1</span><span>Escanean el <span class="ink-b">código QR</span> de tu recepción (o abren tu link) y <span class="ink-b">se registran solos</span> con sus datos.</span></div>
+      <div class="paso"><span class="num">2</span><span>Ven <span class="ink-b">su rutina del día</span> con ilustraciones de cada ejercicio, series, repeticiones y descanso.</span></div>
+      <div class="paso"><span class="num">3</span><span>Van marcando lo que completan y <span class="ink-b">anotan el peso</span> que levantaron.</span></div>
+      <div class="paso"><span class="num">4</span><span>Siguen <span class="ink-b">su progreso</span>: rachas, medidas, fotos privadas y gráficas de su evolución.</span></div>
+      <div class="paso" style="margin-bottom:0"><span class="num">5</span><span>Reciben un <span class="ink-b">recordatorio amable</span> un día antes de que venza su plan.</span></div>
+      <p class="nota">Sin descargar nada de las tiendas: se instala desde el navegador y funciona <span class="ink-b">incluso sin internet</span> dentro del gimnasio.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-ti">Para ti · Tu panel</div>
+      <ul class="lista">
+        <li><span class="ink-b">Quién está al día y quién debe</span>, de un vistazo y con filtros.</li>
+        <li>Registras un pago en <span class="ink-b">dos toques</span> y la fecha se renueva sola.</li>
+        <li>Creas <span class="ink-b">tus planes</span> (mensual, quincenal, día) con tus precios.</li>
+        <li>Armas <span class="ink-b">rutinas</span> eligiendo ejercicios y las asignas a cada cliente.</li>
+        <li>Publicas <span class="ink-b">avisos</span> que todos tus clientes ven al abrir la app.</li>
+        <li>Ves tus <span class="ink-b">ingresos del mes</span> y cómo crece tu gimnasio.</li>
+        <li>Cambias tu <span class="ink-b">logo, tu portada y tus colores</span> cuando quieras.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-ti">Lo que siempre nos preguntan</div>
+      <div style="font-size:10.2pt;line-height:1.55;color:var(--tinta-suave)">
+        <p style="margin-bottom:8px"><span class="ink-b">¿Mis clientes tienen que pagar algo?</span><br>No. Para ellos la app es <span class="mark">gratis</span>. La mensualidad la pagas solo tú.</p>
+        <p style="margin-bottom:8px"><span class="ink-b">¿Y si mi cliente no se maneja con la tecnología?</span><br>Escanea un código, escribe sus datos una vez y listo. Adentro solo ve su rutina y su fecha de pago.</p>
+        <p style="margin-bottom:8px"><span class="ink-b">¿Los datos de mis clientes son míos?</span><br>Sí. Son tuyos y nadie más los ve: cada gimnasio está separado del resto.</p>
+        <p style="margin-bottom:0"><span class="ink-b">¿Cobran por cada cliente que registre?</span><br>No. Registra los que quieras por el mismo precio.</p>
+      </div>
+    </div>
+
+    <div class="card tinte">
+      <div class="card-ti">💪 Ya viene con 40 ejercicios listos</div>
+      <p class="body">
+        No arrancas de cero: tu biblioteca llega con los ejercicios más usados —con su
+        <span class="ink-b">ilustración y su técnica explicada</span>— para que armes rutinas en minutos.
+        Puedes borrar los que no tengas y agregar los tuyos.
+      </p>
+    </div>
+  </div>
+
+  <div class="pie"><span>Zeven Gym · La app de tu gimnasio</span><span>2</span></div>
+</section>
+
+<!-- ============ PÁGINA 3 ============ -->
+<section class="page">
+  <div class="pad">
+    <div class="k">Lo que recibes</div>
+    <h2>Tu kit de bienvenida</h2>
+    <div class="card">
+      <ul class="lista check">
+        <li><span class="ink-b">Tu app lista</span>, con tu nombre, tu logo y tus colores.</li>
+        <li>Tu <span class="ink-b">código QR</span> para imprimir y pegar en recepción, y tu link para WhatsApp.</li>
+        <li>Acceso a <span class="ink-b">tu panel</span> desde tu celular.</li>
+        <li>Los <span class="ink-b">40 ejercicios ilustrados</span> cargados desde el primer día.</li>
+        <li><span class="ink-b">Soporte</span> para acompañarte al arrancar.</li>
+      </ul>
+    </div>
+
+    <div class="k" style="margin-top:15px">Inversión</div>
+    <h2>Empieza gratis, luego una mensualidad baja</h2>
+
+    <div class="precio-box">
+      <div style="font-size:9pt;opacity:.7;letter-spacing:.18em;font-weight:700;text-transform:uppercase">Suscripción mensual</div>
+      <div class="precio">$79.000 <small>COP / mes</small></div>
+      <div class="gratis">★ Primeros 30 días gratis</div>
+    </div>
+
+    <div class="card" style="margin-top:11px">
+      <div class="fila"><span class="et">Primer mes</span><span class="va">Gratis. Pruebas todo con tus clientes reales.</span></div>
+      <div class="fila"><span class="et">Luego</span><span class="va">$79.000 al mes. Sin permanencia.</span></div>
+      <div class="fila"><span class="et">Clientes</span><span class="va">Los que quieras. Sin cobro por persona.</span></div>
+      <div class="fila"><span class="et">Incluye</span><span class="va">App con tu marca + panel + rutinas + soporte.</span></div>
+    </div>
+
+    <div class="card tinte" style="margin-top:11px">
+      <div class="card-ti">Si un mes cierras o no te sirve</div>
+      <p class="body">Nos avisas y ya. <span class="ink-b">No hay contrato ni cláusulas</span>: pagas el mes que usas.</p>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="k">El siguiente paso</div>
+      <h2>¿Montamos tu gimnasio?</h2>
+      <p class="body" style="margin-top:7px">
+        En cuanto nos des el visto bueno creamos tu app con tu marca y te entregamos tu código QR
+        <span class="ink-b">listo para que tus clientes se registren</span>. El primer mes es gratis:
+        pruebas con tu gente y decides con calma.
+      </p>
+      <a class="cta" href="https://wa.me/573208435143?text=Hola%20%F0%9F%91%8B%20Me%20interesa%20la%20propuesta%20de%20Zeven%20Gym%20para%20mi%20gimnasio.%20%C2%BFMe%20cuentan%20c%C3%B3mo%20arrancar%3F">✆&nbsp;&nbsp;Me interesa la propuesta</a>
+      <p class="nota" style="text-align:center">Toca el botón y nos escribes por WhatsApp. Te respondemos y arrancamos.</p>
+    </div>
+  </div>
+
+  <div class="pie"><span>Zeven Gym · La app de tu gimnasio</span><span>3</span></div>
+</section>
+
+</body>
+</html>
