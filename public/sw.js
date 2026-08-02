@@ -4,7 +4,7 @@
    disponibles sin internet (definido en Etapa 10). */
 
 const CACHE = 'zeven-gym-v1'
-const APP_SHELL = ['/', '/manifest.json', '/iconos/icono-192.png', '/iconos/icono-512.png']
+const APP_SHELL = ['/', '/iconos/icono-192.png', '/iconos/icono-512.png']
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(APP_SHELL)))
@@ -19,8 +19,10 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url)
   if (e.request.method !== 'GET') return
-  // Nunca interceptar Firebase/Google (auth y datos siempre en vivo)
+  // Nunca interceptar Firebase/Google: los datos los cachea el propio Firestore
   if (url.origin !== location.origin) return
+  // El manifest es dinámico por gimnasio: siempre en vivo
+  if (url.pathname.startsWith('/api/')) return
 
   e.respondWith(
     fetch(e.request)

@@ -52,6 +52,11 @@ export default function Vincular() {
 
   const entrar = async () => {
     if (!encontrado || !usuario) return
+    // Si le faltan los datos que pide el gimnasio, primero el registro completo
+    if (!perfil?.celular || !perfil?.documento) {
+      navigate(`/g/${encontrado.codigo.toLowerCase()}/registro`)
+      return
+    }
     setOcupado(true)
     try {
       const nombreNuevo = sessionStorage.getItem('zg-nombre-nuevo')

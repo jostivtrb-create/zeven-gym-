@@ -53,9 +53,14 @@ export default function Entrada() {
       return
     }
 
-    // Venía de un link/QR y aún no tiene gym: se vincula solo
-    if (invitacion && !perfil?.gymId && auth.currentUser) {
-      await vincularGym(auth.currentUser, invitacion, nombre.trim() ? { nombre: nombre.trim() } : {})
+    // Venía de un link/QR y aún no tiene gym
+    if (invitacion && !perfil?.gymId) {
+      // Si le faltan los datos que pide el gimnasio, primero el registro completo
+      if (!perfil?.celular || !perfil?.documento) {
+        navigate(`/g/${invitacion.codigo.toLowerCase()}/registro`)
+        return
+      }
+      await vincularGym(auth.currentUser, invitacion)
       sessionStorage.removeItem('zg-codigo-invitacion')
       const actualizado = await recargarPerfil()
       navigate(rutaPorRol(actualizado))

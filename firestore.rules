@@ -76,10 +76,10 @@ service cloud.firestore {
       // Lectura pública: la pantalla de entrada busca el gym por código antes del login
       allow read: if true;
       allow create, delete: if esSuperadmin();
-      // El superadmin edita todo; el admin edita su gym pero NUNCA branding/suscripcion/codigo
+      // El superadmin edita todo. El admin edita su gym —incluido su branding
+      // (logo, banner y colores)— pero NUNCA su suscripción, su código ni su dueño.
       allow update: if esSuperadmin()
         || (esAdminDe(gymId)
-            && request.resource.data.branding == resource.data.branding
             && request.resource.data.suscripcion == resource.data.suscripcion
             && request.resource.data.codigo == resource.data.codigo
             && request.resource.data.adminUid == resource.data.adminUid);

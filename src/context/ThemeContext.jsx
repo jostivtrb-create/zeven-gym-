@@ -26,11 +26,23 @@ export function ThemeProvider({ children }) {
     const root = document.documentElement
     if (color) {
       root.style.setProperty('--gym-color', color)
-      document
-        .querySelector('meta[name="theme-color"]')
-        ?.setAttribute('content', color)
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
     } else {
       root.style.removeProperty('--gym-color')
+    }
+
+    // La PWA se instala con la identidad del gimnasio: su nombre, su logo y su color
+    const manifest = document.querySelector('link[rel="manifest"]')
+    if (manifest) {
+      manifest.setAttribute('href', gym?.codigo ? `/api/manifest?g=${gym.codigo}` : '/api/manifest')
+    }
+    if (gym?.branding?.logoUrl) {
+      document.querySelector('link[rel="apple-touch-icon"]')?.setAttribute('href', gym.branding.logoUrl)
+      document.querySelector('link[rel="icon"]')?.setAttribute('href', gym.branding.logoUrl)
+    }
+    if (gym?.nombre) {
+      document.title = gym.nombre
+      document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute('content', gym.nombre)
     }
   }, [gym])
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGym } from '../../context/ThemeContext'
 import { actualizarGymCampos } from '../../services/db'
+import IdentidadGym from '../../components/IdentidadGym'
 
 const seccion = { fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-3)' }
 const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }
@@ -27,6 +28,7 @@ export default function AdminConfig() {
   const navigate = useNavigate()
   const { gym, setGym } = useGym()
   const [politicas, setPoliticas] = useState({ vigencia: 'desde_pago', permitirCongelar: true, bloquearAlVencer: false, ...gym.politicas })
+  const [branding, setBranding] = useState(gym.branding ?? { color: '#16a34a', logoUrl: null, bannerUrl: null })
   const [contacto, setContacto] = useState({ celular: '', instagram: '', direccion: '', ...gym.contacto })
   const [horarios, setHorarios] = useState(
     gym.horarios?.length
@@ -50,7 +52,7 @@ export default function AdminConfig() {
   const guardar = async () => {
     setGuardando(true)
     try {
-      const campos = { contacto, horarios, politicas }
+      const campos = { contacto, horarios, politicas, branding }
       await actualizarGymCampos(gym.id, campos)
       setGym({ ...gym, ...campos })
       setGuardado(true)
@@ -64,7 +66,7 @@ export default function AdminConfig() {
       <header style={{ background: 'var(--gym-color)', padding: '62px 20px 20px', borderRadius: '0 0 var(--radius-header) var(--radius-header)' }}>
         <button onClick={() => navigate('/admin/mas')} style={{ color: 'rgba(255,255,255,.8)', fontSize: 12 }}>‹ Más</button>
         <div style={{ color: '#fff', fontSize: 20, fontWeight: 600, marginTop: 8 }}>Configuración del gym</div>
-        <div style={{ color: 'rgba(255,255,255,.75)', fontSize: 12, marginTop: 2 }}>Los colores y el logo los gestiona Zeven Gym</div>
+        <div style={{ color: 'rgba(255,255,255,.75)', fontSize: 12, marginTop: 2 }}>Tu identidad, tus horarios y tus reglas</div>
       </header>
 
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -76,6 +78,11 @@ export default function AdminConfig() {
           </div>
           <span style={{ color: 'var(--text-4)', fontSize: 16 }}>›</span>
         </button>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={seccion}>Identidad de tu gimnasio</div>
+          <IdentidadGym gym={{ ...gym, branding }} onChange={(b) => { setBranding(b); setGuardado(false) }} />
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={seccion}>Contacto y redes</div>

@@ -11,6 +11,7 @@ import Perfil from './screens/cliente/Perfil'
 import Entrada from './screens/entrada/Entrada'
 import Vincular from './screens/entrada/Vincular'
 import Invitacion from './screens/entrada/Invitacion'
+import RegistroCliente from './screens/entrada/RegistroCliente'
 import AdminShell from './screens/admin/AdminShell'
 import AdminDashboard from './screens/admin/AdminDashboard'
 import AdminClientes from './screens/admin/AdminClientes'
@@ -39,6 +40,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Entrada />} />
             <Route path="/g/:codigo" element={<Invitacion />} />
+            <Route path="/g/:codigo/registro" element={<RegistroCliente />} />
             <Route path="/vincular" element={<RutaProtegida><Vincular /></RutaProtegida>} />
             <Route path="/app" element={<RutaProtegida rol="cliente" requiereGym><ClienteShell /></RutaProtegida>}>
               <Route index element={<Portada />} />

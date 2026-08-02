@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { initializeFirestore, persistentLocalCache } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
 const firebaseConfig = {
@@ -18,7 +18,9 @@ const app = initializeApp(firebaseConfig)
 
 export const auth = getAuth(app)
 export const googleProvider = new GoogleAuthProvider()
-export const db = getFirestore(app)
+/* Caché local: el cliente ve su rutina y su progreso sin internet.
+   Sin tab manager múltiple (lección Solucion_Ingreso: causaba bloqueos). */
+export const db = initializeFirestore(app, { localCache: persistentLocalCache({}) })
 export const storage = getStorage(app)
 
 // Persistencia en localStorage: evita cierres de sesión espontáneos en PWA

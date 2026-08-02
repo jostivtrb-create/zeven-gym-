@@ -29,8 +29,14 @@ export default function Invitacion() {
 
   const unirme = async () => {
     if (!gym) return
+    // Sin cuenta: al formulario de registro, que pide los datos del gimnasio
     if (!usuario) {
-      navigate('/')
+      navigate(`/g/${codigo}/registro`)
+      return
+    }
+    // Con cuenta pero sin datos completos: también pasa por el formulario
+    if (!perfil?.gymId && (!perfil?.celular || !perfil?.documento)) {
+      navigate(`/g/${codigo}/registro`)
       return
     }
     setOcupado(true)
