@@ -155,7 +155,7 @@ export async function crearGimnasio({ nombre, ciudad, color, admin }) {
     branding: { color, logoUrl: null, bannerUrl: null },
     contacto: { celular: admin.celular ?? '', instagram: '', direccion: '' },
     horarios: [],
-    politicas: { vigencia: 'desde_pago', permitirCongelar: true, bloquearAlVencer: false },
+    politicas: { vigencia: 'desde_pago', permitirCongelar: true, bloquearAlVencer: true },
     suscripcion: { estado: 'prueba', inicioPrueba: serverTimestamp(), proximoCorte: null, ultimoPagoEl: null },
     adminUid: null,
     adminCorreo: admin.correo,

@@ -150,8 +150,8 @@ export default function AdminConfig() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: 12.5, fontWeight: 600 }}>Bloquear rutina al vencer</div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Si está apagado, solo se muestra un aviso</div>
+                <div style={{ fontSize: 12.5, fontWeight: 600 }}>Exigir plan al día para entrenar</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.45 }}>Sin pago al día no ve su rutina, pero sí su progreso y su historial. Si lo apagas, solo se le avisa.</div>
               </div>
               <Toggle activo={politicas.bloquearAlVencer} onClick={() => { setPoliticas({ ...politicas, bloquearAlVencer: !politicas.bloquearAlVencer }); setGuardado(false) }} />
             </div>

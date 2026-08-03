@@ -66,9 +66,18 @@ export default function Rutina() {
   const sesion = rutina?.dias?.[diaSel]
   const esHoy = diaSel === hoyKey
 
+  // Entrenar exige plan al día. Sus datos (progreso, medidas, historial) se
+  // siguen viendo siempre: lo que se bloquea es la rutina, no su información.
   const vence = membresia?.vence?.toDate?.()
-  const vencida = vence && vence < new Date(new Date().toDateString())
-  const bloqueada = vencida && gym.politicas?.bloquearAlVencer
+  const congelada = membresia?.estado === 'congelada'
+  const alDia = !!vence && vence >= new Date(new Date().toDateString()) && !congelada
+  const exigePago = gym.politicas?.bloquearAlVencer !== false
+  const bloqueada = !alDia && exigePago
+  const motivo = !membresia
+    ? { titulo: 'Tu plan aún no está activo', texto: `Pásate por recepción de ${gym.nombre} y lo activamos. Apenas quede listo verás tu rutina aquí.` }
+    : congelada
+      ? { titulo: 'Tu membresía está congelada', texto: 'Reactívala en recepción cuando quieras volver. Tus días pagados te esperan intactos.' }
+      : { titulo: 'Tu rutina está en pausa', texto: 'Tu plan venció. Renueva en recepción y volvemos al entreno. Tu progreso y tu racha te esperan intactos.' }
 
   const completar = async (ej, conPeso) => {
     const dato = { hecho: true, ...(conPeso && pesoInput ? { peso: Number(pesoInput) } : {}) }
@@ -109,7 +118,21 @@ export default function Rutina() {
 
       {rutina === undefined && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: 12.5 }}>Cargando tu rutina…</div>}
 
-      {rutina === null && (
+      {rutina !== undefined && bloqueada && (
+        <div style={{ margin: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 24, textAlign: 'center', boxShadow: 'var(--shadow-card)' }}>
+          <div style={{ width: 52, height: 52, borderRadius: 99, margin: '0 auto 12px', background: 'color-mix(in oklab, var(--gym-color) 10%, white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🔒</div>
+          <div style={{ fontSize: 15, fontWeight: 600 }}>{motivo.titulo}</div>
+          <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.55 }}>{motivo.texto}</div>
+          <button onClick={() => navigate('/app/perfil')} style={{ marginTop: 16, width: '100%', background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 0', fontSize: 13, fontWeight: 600 }}>
+            Ver mi membresía
+          </button>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 12, lineHeight: 1.5 }}>
+            Tu progreso, tus medidas y tu historial siguen disponibles en <b>Progreso</b>.
+          </div>
+        </div>
+      )}
+
+      {rutina === null && !bloqueada && (
         <div style={{ margin: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 24, textAlign: 'center' }}>
           <div style={{ fontSize: 14, fontWeight: 600 }}>Aún no tienes rutina asignada</div>
           <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.6 }}>
@@ -118,7 +141,7 @@ export default function Rutina() {
         </div>
       )}
 
-      {rutina && (
+      {rutina && !bloqueada && (
         <>
           {sesion ? (
             <div style={{ margin: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 16 }}>
@@ -217,19 +240,6 @@ export default function Rutina() {
               )
             })}
 
-            {bloqueada && sesion && (
-              <div style={{ position: 'absolute', inset: '-6px -4px', borderRadius: 18, background: 'rgba(250,250,249,.82)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 40 }}>
-                <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20, margin: '0 24px', textAlign: 'center', boxShadow: 'var(--shadow-card)' }}>
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>Tu rutina está en pausa</div>
-                  <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.5 }}>
-                    Tu plan venció. Renueva en recepción y volvemos al entreno. Tu progreso y tu racha te esperan intactos.
-                  </div>
-                  <button onClick={() => navigate('/app/perfil')} style={{ marginTop: 14, width: '100%', background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius)', padding: '10px 0', fontSize: 13, fontWeight: 600 }}>
-                    Ver mi membresía
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </>
       )}
