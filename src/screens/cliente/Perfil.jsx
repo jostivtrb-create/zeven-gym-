@@ -118,17 +118,17 @@ export default function Perfil() {
                 </div>
               )}
               {estado.etiqueta === 'Por vencer' && (
-                <div style={{ marginTop: 12, background: 'var(--warning-bg)', border: '1px solid #fcd34d', borderRadius: 'var(--radius)', padding: '11px 13px', fontSize: 11.5, color: 'var(--warning-text)', lineHeight: 1.5 }}>
+                <div style={{ marginTop: 12, background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', borderRadius: 'var(--radius)', padding: '11px 13px', fontSize: 11.5, color: 'var(--warning-text)', lineHeight: 1.5 }}>
                   Tu plan vence {dias === 0 ? 'hoy' : 'pronto'}. Renuévalo en recepción y no pierdas tu racha.
                 </div>
               )}
               {estado.etiqueta === 'Vencida' && (
-                <div style={{ marginTop: 12, background: 'var(--danger-bg)', border: '1px solid #fca5a5', borderRadius: 'var(--radius)', padding: '11px 13px', fontSize: 11.5, color: 'var(--danger)', lineHeight: 1.5 }}>
+                <div style={{ marginTop: 12, background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', borderRadius: 'var(--radius)', padding: '11px 13px', fontSize: 11.5, color: 'var(--danger)', lineHeight: 1.5 }}>
                   Tu plan está vencido. Pásate por recepción y lo reactivamos en un momento.
                 </div>
               )}
               {congelada && (
-                <div style={{ marginTop: 12, background: '#dbeafe', border: '1px solid #93c5fd', borderRadius: 'var(--radius)', padding: '11px 13px', fontSize: 11.5, color: '#1e40af', lineHeight: 1.5 }}>
+                <div style={{ marginTop: 12, background: 'var(--info-bg)', border: '1px solid var(--info-border)', borderRadius: 'var(--radius)', padding: '11px 13px', fontSize: 11.5, color: 'var(--info-text)', lineHeight: 1.5 }}>
                   Tu membresía está congelada: tus {membresia.diasRestantes ?? 0} días pagados te esperan intactos.
                 </div>
               )}
@@ -145,7 +145,7 @@ export default function Perfil() {
             <div style={seccionTitulo}>Historial de pagos</div>
             <div style={{ ...card, padding: '6px 14px' }}>
               {pagos.map((p, i) => (
-                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < pagos.length - 1 ? '1px solid #f2f2f0' : 'none' }}>
+                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < pagos.length - 1 ? '1px solid var(--hairline)' : 'none' }}>
                   <div>
                     <div style={{ fontSize: 12.5, fontWeight: 500 }}>{p.fecha?.toDate ? FECHA_CORTA.format(p.fecha.toDate()) : '—'}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{p.planNombre}</div>
@@ -166,7 +166,7 @@ export default function Perfil() {
               ['Nacimiento', perfil?.nacimiento],
               ['Correo', perfil?.correo],
             ].filter(([, v]) => v).map(([k, v], i, arr) => (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '9px 0', borderBottom: i < arr.length - 1 ? '1px solid #f2f2f0' : 'none', fontSize: 12.5 }}>
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '9px 0', borderBottom: i < arr.length - 1 ? '1px solid var(--hairline)' : 'none', fontSize: 12.5 }}>
                 <span style={{ color: 'var(--text-2)', flex: 'none' }}>{k}</span>
                 <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v}</span>
               </div>
@@ -183,7 +183,7 @@ export default function Perfil() {
                   Un aviso amable en este celular un día antes de que venza tu plan.
                 </div>
               </div>
-              <button onClick={alternarPush} aria-pressed={push.activo} style={{ width: 42, height: 24, borderRadius: 99, background: push.activo ? 'var(--gym-color)' : '#d6d6d2', position: 'relative', flex: 'none', transition: 'background .2s' }}>
+              <button onClick={alternarPush} aria-pressed={push.activo} style={{ width: 42, height: 24, borderRadius: 99, background: push.activo ? 'var(--gym-color)' : 'var(--border-2)', position: 'relative', flex: 'none', transition: 'background .2s' }}>
                 <span style={{ position: 'absolute', top: 2, left: push.activo ? 20 : 2, width: 20, height: 20, borderRadius: 99, background: '#fff', transition: 'left .2s' }} />
               </button>
             </div>
@@ -194,7 +194,7 @@ export default function Perfil() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={seccionTitulo}>Mi gimnasio</div>
           {confirmandoSalida ? (
-            <div style={{ ...card, border: '1px solid #f3d5d5', padding: 14 }}>
+            <div style={{ ...card, border: '1px solid var(--danger-border)', padding: 14 }}>
               <div style={{ fontSize: 13, fontWeight: 600 }}>¿Salir de {gym.nombre}?</div>
               <div style={{ fontSize: 11.5, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.6 }}>
                 {diasPagados > 0
@@ -221,7 +221,7 @@ export default function Perfil() {
           )}
         </div>
 
-        <button onClick={cerrarSesion} style={{ background: 'var(--surface)', border: '1px solid #f3d5d5', color: 'var(--danger)', borderRadius: 'var(--radius-md)', padding: '12px 0', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>
+        <button onClick={cerrarSesion} style={{ background: 'var(--surface)', border: '1px solid var(--danger-border)', color: 'var(--danger)', borderRadius: 'var(--radius-md)', padding: '12px 0', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>
           Cerrar sesión
         </button>
       </div>

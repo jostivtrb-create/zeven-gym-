@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { storage } from '../firebase'
 import { PALETA_GYMS } from '../data/constantes'
+import { copiarPromptPortadaYAbrirGemini } from '../services/infografia'
 
 /* Editor de identidad del gimnasio: logo, portada y color.
    Lo usan el admin (Configuración) y el superadmin (detalle del gym). */
@@ -14,6 +15,7 @@ export default function IdentidadGym({ gym, onChange, guardar, ocupado }) {
   const logoRef = useRef(null)
   const bannerRef = useRef(null)
   const [subiendo, setSubiendo] = useState('')
+  const [avisoIa, setAvisoIa] = useState('')
   const iniciales = (gym.nombre ?? 'G').split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()
 
   const subir = async (tipo, archivo) => {
@@ -73,6 +75,22 @@ export default function IdentidadGym({ gym, onChange, guardar, ocupado }) {
       <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: -8, lineHeight: 1.5 }}>
         El logo se ve mejor <b>cuadrado</b> (es el ícono de la app en el celular de tus clientes). La portada, horizontal.
       </div>
+
+      {/* Portada con IA: copia el prompt maestro y abre Gemini */}
+      <button
+        onClick={async () => {
+          const ok = await copiarPromptPortadaYAbrirGemini(gym)
+          setAvisoIa(ok ? 'Prompt copiado. En Gemini: adjunta tu logo, pega el prompt y genera. Luego sube aquí la imagen con "Cambiar portada".' : 'Se abrió Gemini, pero copia el prompt manualmente (el portapapeles falló).')
+        }}
+        style={{ background: 'color-mix(in oklab, ' + color + ' 10%, white)', border: '1px solid color-mix(in oklab, ' + color + ' 30%, white)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: 11.5, fontWeight: 600, color, textAlign: 'center' }}
+      >
+        ✨ Crear mi portada con IA (Gemini)
+      </button>
+      {avisoIa && (
+        <div style={{ fontSize: 10.5, color: 'var(--text-2)', marginTop: -8, lineHeight: 1.55, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
+          {avisoIa}
+        </div>
+      )}
 
       {/* Color */}
       <div>

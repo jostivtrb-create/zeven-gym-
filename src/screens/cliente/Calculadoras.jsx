@@ -4,7 +4,7 @@ const card = { background: 'var(--surface)', border: '1px solid var(--border)', 
 const campo = { flex: 1, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 12px' }
 const inputStyle = { width: '100%', border: 'none', background: 'transparent', fontSize: 13, fontWeight: 600, outline: 'none', padding: 0 }
 const botonCalc = { background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '0 16px', fontSize: 12, fontWeight: 600 }
-const resultado = { marginTop: 12, background: 'color-mix(in oklab, var(--gym-color) 9%, white)', borderRadius: 'var(--radius)', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 14 }
+const resultado = { marginTop: 12, background: 'color-mix(in oklab, var(--gym-color) 9%, var(--mix-base))', borderRadius: 'var(--radius)', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 14 }
 
 function Campo({ label, value, onChange, placeholder }) {
   return (
@@ -21,7 +21,7 @@ function Resultado({ valor, unidad, texto }) {
       <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--gym-color)', whiteSpace: 'nowrap' }}>
         {valor} {unidad && <span style={{ fontSize: 12 }}>{unidad}</span>}
       </div>
-      <div style={{ fontSize: 11.5, color: '#565652', lineHeight: 1.5 }}>{texto}</div>
+      <div style={{ fontSize: 11.5, color: 'var(--text-2)', lineHeight: 1.5 }}>{texto}</div>
     </div>
   )
 }

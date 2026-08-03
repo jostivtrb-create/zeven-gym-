@@ -120,7 +120,7 @@ export default function Rutina() {
 
       {rutina !== undefined && bloqueada && (
         <div style={{ margin: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 24, textAlign: 'center', boxShadow: 'var(--shadow-card)' }}>
-          <div style={{ width: 52, height: 52, borderRadius: 99, margin: '0 auto 12px', background: 'color-mix(in oklab, var(--gym-color) 10%, white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🔒</div>
+          <div style={{ width: 52, height: 52, borderRadius: 99, margin: '0 auto 12px', background: 'color-mix(in oklab, var(--gym-color) 10%, var(--mix-base))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🔒</div>
           <div style={{ fontSize: 15, fontWeight: 600 }}>{motivo.titulo}</div>
           <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.55 }}>{motivo.texto}</div>
           <button onClick={() => navigate('/app/perfil')} style={{ marginTop: 16, width: '100%', background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 0', fontSize: 13, fontWeight: 600 }}>
@@ -153,7 +153,7 @@ export default function Rutina() {
               </div>
               {esHoy && (
                 <>
-                  <div style={{ marginTop: 12, height: 8, borderRadius: 99, background: '#f0f0ee', overflow: 'hidden' }}>
+                  <div style={{ marginTop: 12, height: 8, borderRadius: 99, background: 'var(--track)', overflow: 'hidden' }}>
                     <div style={{ width: `${total ? (hechos / total) * 100 : 0}%`, height: '100%', borderRadius: 99, background: 'var(--gym-color)', transition: 'width .3s' }} />
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 8 }}>
@@ -182,8 +182,8 @@ export default function Rutina() {
                   key={ej.id}
                   onClick={() => esHoy && !hecho && !bloqueada && setActivo(abierto ? null : ej.id)}
                   style={{
-                    background: hecho ? 'color-mix(in oklab, var(--gym-color) 8%, white)' : 'var(--surface)',
-                    border: abierto ? '1.5px solid var(--gym-color)' : hecho ? '1px solid color-mix(in oklab, var(--gym-color) 25%, white)' : '1px solid var(--border)',
+                    background: hecho ? 'color-mix(in oklab, var(--gym-color) 8%, var(--mix-base))' : 'var(--surface)',
+                    border: abierto ? '1.5px solid var(--gym-color)' : hecho ? '1px solid color-mix(in oklab, var(--gym-color) 25%, var(--mix-base))' : '1px solid var(--border)',
                     borderRadius: 'var(--radius-md)',
                     padding: 12,
                     cursor: esHoy && !hecho ? 'pointer' : 'default',
@@ -197,7 +197,7 @@ export default function Rutina() {
                           window.open(ej.imagenUrl, '_blank')
                         }
                       }}
-                      style={{ width: 54, height: 54, borderRadius: 'var(--radius)', flex: 'none', background: ej.imagenUrl ? `center/cover url(${ej.imagenUrl})` : 'color-mix(in oklab, var(--gym-color) 8%, white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, cursor: ej.imagenUrl ? 'zoom-in' : 'default' }}
+                      style={{ width: 54, height: 54, borderRadius: 'var(--radius)', flex: 'none', background: ej.imagenUrl ? `center/cover url(${ej.imagenUrl})` : 'color-mix(in oklab, var(--gym-color) 8%, var(--mix-base))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, cursor: ej.imagenUrl ? 'zoom-in' : 'default' }}
                     >
                       {!ej.imagenUrl && '💪'}
                     </div>
@@ -208,12 +208,12 @@ export default function Rutina() {
                       </div>
                       {ej.nota && <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 3, lineHeight: 1.4 }}>💡 {ej.nota}</div>}
                       {hecho && pesoHoy != null && (
-                        <div style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 600, color: 'var(--gym-color)', background: '#fff', borderRadius: 99, padding: '2px 8px', marginTop: 6 }}>
+                        <div style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 600, color: 'var(--gym-color)', background: 'var(--surface-2)', borderRadius: 99, padding: '2px 8px', marginTop: 6 }}>
                           Hoy: {pesoHoy} kg
                         </div>
                       )}
                       {!hecho && ej.pesoSugerido != null && (
-                        <div style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 600, color: 'var(--gym-color)', background: 'color-mix(in oklab, var(--gym-color) 10%, white)', borderRadius: 99, padding: '2px 8px', marginTop: 6 }}>
+                        <div style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 600, color: 'var(--gym-color)', background: 'color-mix(in oklab, var(--gym-color) 10%, var(--mix-base))', borderRadius: 99, padding: '2px 8px', marginTop: 6 }}>
                           Sugerido: {ej.pesoSugerido} kg
                         </div>
                       )}
@@ -222,7 +222,7 @@ export default function Rutina() {
                     {hecho ? (
                       <div style={{ width: 26, height: 26, flex: 'none', borderRadius: 99, background: 'var(--gym-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 700 }}>✓</div>
                     ) : (
-                      <div style={{ width: 26, height: 26, flex: 'none', borderRadius: 99, border: '2px solid #d6d6d2' }} />
+                      <div style={{ width: 26, height: 26, flex: 'none', borderRadius: 99, border: '2px solid var(--border-2)' }} />
                     )}
                   </div>
                   {abierto && !hecho && esHoy && (

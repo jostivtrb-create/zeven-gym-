@@ -15,10 +15,23 @@
   --text-3: #8a8a86;
   --text-4: #9ca3af;
 
+  /* Base con la que se mezclan los tintes del color del gym (blanco en claro,
+     superficie en oscuro). Así "color-mix(... var(--mix-base))" sirve en ambos temas. */
+  --mix-base: #ffffff;
+  --hairline: #f2f2f0;
+  --track: #f0f0ee;
+
   --warning-text: #92400e;
   --warning-bg: #fef3c7;
+  --warning-border: #fcd34d;
   --danger: #b91c1c;
   --danger-bg: #fee2e2;
+  --danger-border: #fca5a5;
+  --info-text: #1e40af;
+  --info-bg: #dbeafe;
+  --info-border: #93c5fd;
+  --ok-text: #166534;
+  --ok-bg: #dcfce7;
 
   /* Panel superadmin (identidad neutra Zeven, no usa --gym-color) */
   --zeven-dark: #1a1a1a;
@@ -34,4 +47,40 @@
   --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.1);
 
   --font: 'Poppins', system-ui, -apple-system, sans-serif;
+}
+
+/* Tema oscuro premium de la app del CLIENTE (ClienteShell lo activa en <html>).
+   Los paneles admin y superadmin siguen en claro. */
+.tema-oscuro {
+  color-scheme: dark;
+  --bg: #0c0c0e;
+  --surface: #17171a;
+  --surface-2: #202024;
+  --border: #26262b;
+  --border-2: #35353c;
+  --text: #f4f4f2;
+  --text-2: #b4b4af;
+  --text-3: #8d8d89;
+  --text-4: #6e6e74;
+
+  --mix-base: #17171a;
+  --hairline: #232328;
+  --track: #2b2b31;
+
+  --warning-text: #fcd34d;
+  --warning-bg: #2b210b;
+  --warning-border: #574410;
+  --danger: #f87171;
+  --danger-bg: #341315;
+  --danger-border: #5f2222;
+  --info-text: #93c5fd;
+  --info-bg: #12233d;
+  --info-border: #1e3a5f;
+  --ok-text: #4ade80;
+  --ok-bg: #0f2b19;
+
+  --gym-color-soft: color-mix(in srgb, var(--gym-color) 16%, #17171a);
+
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.55);
 }

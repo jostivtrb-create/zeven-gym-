@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { storage } from '../../firebase'
 import { useAuth } from '../../context/AuthContext'
-import { listarProgreso, guardarMedidasHoy, calcularRacha } from '../../services/db'
+import { listarProgreso, guardarMedidasHoy, calcularRacha, obtenerPerfil, actualizarUsuario } from '../../services/db'
 import { doc, setDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 
@@ -16,9 +16,30 @@ export default function Progreso() {
   const [editando, setEditando] = useState(false)
   const [form, setForm] = useState({ peso: '', cintura: '', brazo: '' })
   const [subiendo, setSubiendo] = useState(false)
+  const [metas, setMetas] = useState({ metaPeso: '', metaEntrenosMes: '' })
+  const [metasGuardadas, setMetasGuardadas] = useState(false)
 
   const cargar = () => perfil?.uid && listarProgreso(perfil.uid).then(setProgreso).catch(() => setProgreso([]))
-  useEffect(() => { cargar() }, [perfil?.uid])
+  useEffect(() => {
+    cargar()
+    // Metas frescas desde Firestore (alimentan el anillo y el contador del Inicio)
+    if (perfil?.uid) {
+      obtenerPerfil(perfil.uid)
+        .then((p) => p && setMetas({ metaPeso: p.metaPeso ?? '', metaEntrenosMes: p.metaEntrenosMes ?? '' }))
+        .catch(() => {})
+    }
+  }, [perfil?.uid])
+
+  const guardarMetas = async () => {
+    const metaPeso = parseFloat(metas.metaPeso)
+    const metaEntrenosMes = parseInt(metas.metaEntrenosMes, 10)
+    await actualizarUsuario(perfil.uid, {
+      metaPeso: Number.isNaN(metaPeso) ? null : metaPeso,
+      metaEntrenosMes: Number.isNaN(metaEntrenosMes) ? null : metaEntrenosMes,
+    })
+    setMetasGuardadas(true)
+    setTimeout(() => setMetasGuardadas(false), 2500)
+  }
 
   const lista = progreso ?? []
   const racha = calcularRacha(lista)
@@ -94,7 +115,7 @@ export default function Progreso() {
           <>
             <div style={{ ...card, padding: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ width: 64, height: 64, borderRadius: 99, background: 'color-mix(in oklab, var(--gym-color) 12%, white)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 64, height: 64, borderRadius: 99, background: 'color-mix(in oklab, var(--gym-color) 12%, var(--mix-base))', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                   <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--gym-color)', lineHeight: 1 }}>{racha.actual}</div>
                   <div style={{ fontSize: 8.5, fontWeight: 600, color: 'var(--gym-color)', letterSpacing: '.04em' }}>DÍAS</div>
                 </div>
@@ -111,13 +132,34 @@ export default function Progreso() {
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
                 {logros.map((l) => (
-                  <div key={l.nombre} style={{ flex: 1, textAlign: 'center', background: l.logrado ? 'color-mix(in oklab, var(--gym-color) 8%, white)' : 'var(--surface-2)', borderRadius: 'var(--radius)', padding: '10px 4px' }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 99, background: l.logrado ? 'var(--gym-color)' : '#e4e4e0', color: l.logrado ? '#fff' : '#a8a8a4', fontSize: l.logrado ? 13 : 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                  <div key={l.nombre} style={{ flex: 1, textAlign: 'center', background: l.logrado ? 'color-mix(in oklab, var(--gym-color) 8%, var(--mix-base))' : 'var(--surface-2)', borderRadius: 'var(--radius)', padding: '10px 4px' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 99, background: l.logrado ? 'var(--gym-color)' : 'var(--track)', color: l.logrado ? '#fff' : 'var(--text-4)', fontSize: l.logrado ? 13 : 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
                       {l.logrado ? '✓' : l.meta}
                     </div>
-                    <div style={{ fontSize: 10, fontWeight: l.logrado ? 600 : 500, marginTop: 6, color: l.logrado ? 'inherit' : '#a8a8a4' }}>{l.nombre}</div>
+                    <div style={{ fontSize: 10, fontWeight: l.logrado ? 600 : 500, marginTop: 6, color: l.logrado ? 'inherit' : 'var(--text-4)' }}>{l.nombre}</div>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div style={{ ...card, padding: 16 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 600 }}>Mis metas 🎯</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3, lineHeight: 1.5 }}>
+                Le dan vida al anillo de progreso y al contador de entrenos de tu Inicio.
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                {[
+                  ['metaPeso', 'Peso meta (kg)', '78'],
+                  ['metaEntrenosMes', 'Entrenos al mes', '20'],
+                ].map(([k, label, ph]) => (
+                  <div key={k} style={{ flex: 1 }}>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginBottom: 4 }}>{label}</div>
+                    <input type="number" inputMode="decimal" value={metas[k]} onChange={(e) => setMetas({ ...metas, [k]: e.target.value })} placeholder={ph} style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 10px', fontSize: 13, fontWeight: 600, outline: 'none', background: 'var(--surface-2)', color: 'var(--text)', boxSizing: 'border-box' }} />
+                  </div>
+                ))}
+                <button onClick={guardarMetas} style={{ alignSelf: 'flex-end', background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '10px 14px', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  {metasGuardadas ? '✓ Listo' : 'Guardar'}
+                </button>
               </div>
             </div>
 
@@ -125,21 +167,21 @@ export default function Progreso() {
               <div style={{ ...card, padding: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ fontSize: 13.5, fontWeight: 600 }}>Tu levantamiento estrella</div>
-                  <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--gym-color)', background: 'color-mix(in oklab, var(--gym-color) 10%, white)', borderRadius: 99, padding: '3px 9px' }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--gym-color)', background: 'color-mix(in oklab, var(--gym-color) 10%, var(--mix-base))', borderRadius: 99, padding: '3px 9px' }}>
                     {puntos.at(-1).peso - puntos[0].peso >= 0 ? '+' : ''}{fmt(puntos.at(-1).peso - puntos[0].peso)} kg
                   </div>
                 </div>
                 <svg viewBox="0 0 320 130" style={{ width: '100%', marginTop: 10 }}>
-                  {[30, 70, 110].map((y) => <line key={y} x1="16" y1={y} x2="312" y2={y} stroke="#f0f0ee" strokeWidth="1" />)}
+                  {[30, 70, 110].map((y) => <line key={y} x1="16" y1={y} x2="312" y2={y} stroke="var(--track)" strokeWidth="1" />)}
                   <polyline points={puntos.map((p, i) => `${X(i)},${Y(p.peso)}`).join(' ')} fill="none" stroke="var(--gym-color)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                   {puntos.map((p, i) => (
-                    <circle key={i} cx={X(i)} cy={Y(p.peso)} r={i === puntos.length - 1 ? 5 : 3.5} fill="var(--gym-color)" stroke={i === puntos.length - 1 ? '#fff' : 'none'} strokeWidth="2" />
+                    <circle key={i} cx={X(i)} cy={Y(p.peso)} r={i === puntos.length - 1 ? 5 : 3.5} fill="var(--gym-color)" stroke={i === puntos.length - 1 ? 'var(--surface)' : 'none'} strokeWidth="2" />
                   ))}
                   <text x={X(puntos.length - 1)} y={Y(puntos.at(-1).peso) - 12} textAnchor="middle" style={{ font: '600 11px Poppins,sans-serif' }} fill="var(--gym-color)">
                     {fmt(puntos.at(-1).peso)} kg
                   </text>
                   {puntos.map((p, i) => (
-                    <text key={i} x={X(i)} y="126" textAnchor="middle" style={{ font: '10px Poppins,sans-serif' }} fill="#a8a8a4">
+                    <text key={i} x={X(i)} y="126" textAnchor="middle" style={{ font: '10px Poppins,sans-serif' }} fill="var(--text-4)">
                       {MES_CORTO.format(new Date(p.fecha + 'T00:00:00'))} {new Date(p.fecha + 'T00:00:00').getDate()}
                     </text>
                   ))}
@@ -154,7 +196,7 @@ export default function Progreso() {
                   ['Cintura', 'cintura', 'cm'],
                   ['Brazo', 'brazo', 'cm'],
                 ].filter(([, k]) => ultimaMedida[k] != null).map(([nombre, k, unidad], i, arr) => (
-                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderBottom: i < arr.length - 1 ? '1px solid #f2f2f0' : 'none' }}>
+                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderBottom: i < arr.length - 1 ? '1px solid var(--hairline)' : 'none' }}>
                     <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>{nombre}</span>
                     <span style={{ fontSize: 13, fontWeight: 600 }}>
                       {fmt(ultimaMedida[k])} {unidad}{' '}
@@ -178,7 +220,7 @@ export default function Progreso() {
                 {fotos.slice(-4).map((f) => (
                   <img key={f.id} src={f.url} alt={f.fecha} style={{ flex: '0 0 31%', aspectRatio: '3/4', borderRadius: 'var(--radius)', objectFit: 'cover' }} />
                 ))}
-                <label style={{ flex: '0 0 31%', aspectRatio: '3/4', borderRadius: 'var(--radius)', border: '1.5px dashed #d6d6d2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#a8a8a4', cursor: 'pointer' }}>
+                <label style={{ flex: '0 0 31%', aspectRatio: '3/4', borderRadius: 'var(--radius)', border: '1.5px dashed var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: 'var(--text-4)', cursor: 'pointer' }}>
                   {subiendo ? 'Subiendo…' : '+ Añadir'}
                   <input type="file" accept="image/*" onChange={subirFoto} style={{ display: 'none' }} />
                 </label>
