@@ -108,10 +108,10 @@ export default function AdminConfig() {
           <div style={{ ...card, padding: '2px 14px' }}>
             {horarios.map((h, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 0', borderBottom: i < horarios.length - 1 ? '1px solid #f2f2f0' : 'none', fontSize: 12.5 }}>
-                <input value={h.dias} onChange={(e) => setH(i, 'dias')(e.target.value)} style={{ color: 'var(--text-2)', border: 'none', outline: 'none', background: 'transparent', flex: 1.2, fontFamily: 'inherit', fontSize: 12.5 }} />
-                <input value={h.abre ?? ''} onChange={(e) => setH(i, 'abre')(e.target.value)} placeholder="5:00 am" style={{ fontWeight: 500, textAlign: 'right', border: 'none', outline: 'none', background: 'transparent', flex: 0.8, fontFamily: 'inherit', fontSize: 12.5 }} />
+                <input value={h.dias} onChange={(e) => setH(i, 'dias')(e.target.value)} style={{ color: 'var(--text-2)', border: 'none', outline: 'none', background: 'transparent', flex: 1.2, minWidth: 0, fontFamily: 'inherit', fontSize: 12.5 }} />
+                <input value={h.abre ?? ''} onChange={(e) => setH(i, 'abre')(e.target.value)} placeholder="5:00 am" style={{ fontWeight: 500, textAlign: 'right', border: 'none', outline: 'none', background: 'transparent', flex: 0.8, minWidth: 0, fontFamily: 'inherit', fontSize: 12.5 }} />
                 <span style={{ color: 'var(--text-4)' }}>–</span>
-                <input value={h.cierra ?? ''} onChange={(e) => setH(i, 'cierra')(e.target.value)} placeholder="10:00 pm" style={{ fontWeight: 500, border: 'none', outline: 'none', background: 'transparent', flex: 0.8, fontFamily: 'inherit', fontSize: 12.5 }} />
+                <input value={h.cierra ?? ''} onChange={(e) => setH(i, 'cierra')(e.target.value)} placeholder="10:00 pm" style={{ fontWeight: 500, border: 'none', outline: 'none', background: 'transparent', flex: 0.8, minWidth: 0, fontFamily: 'inherit', fontSize: 12.5 }} />
               </div>
             ))}
           </div>

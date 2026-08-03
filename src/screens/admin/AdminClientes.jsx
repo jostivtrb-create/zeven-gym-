@@ -73,7 +73,7 @@ export default function AdminClientes() {
             <circle cx="10" cy="10" r="6" />
             <line x1="15" y1="15" x2="20" y2="20" />
           </svg>
-          <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por nombre o documento…" style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 12.5, color: '#fff', padding: '7px 0' }} />
+          <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por nombre o documento…" style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: 12.5, color: '#fff', padding: '7px 0' }} />
         </div>
       </header>
 
