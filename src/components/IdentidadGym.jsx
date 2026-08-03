@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { storage } from '../firebase'
 import { PALETA_GYMS } from '../data/constantes'
-import { copiarPromptPortadaYAbrirGemini } from '../services/infografia'
+import { copiarPromptPortadaYAbrirGemini, copiarPromptAmigoYAbrirGemini } from '../services/infografia'
 
 /* Editor de identidad del gimnasio: logo, portada y color.
    Lo usan el admin (Configuración) y el superadmin (detalle del gym). */
@@ -14,9 +14,12 @@ export default function IdentidadGym({ gym, onChange, guardar, ocupado }) {
   const color = branding.color ?? '#16a34a'
   const logoRef = useRef(null)
   const bannerRef = useRef(null)
+  const amigoRef = useRef(null)
   const [subiendo, setSubiendo] = useState('')
   const [avisoIa, setAvisoIa] = useState('')
   const iniciales = (gym.nombre ?? 'G').split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()
+
+  const CAMPO_BRANDING = { logo: 'logoUrl', banner: 'bannerUrl', amigo: 'amigoUrl' }
 
   const subir = async (tipo, archivo) => {
     if (!archivo || !gym.id) return
@@ -25,7 +28,7 @@ export default function IdentidadGym({ gym, onChange, guardar, ocupado }) {
       const r = ref(storage, `gimnasios/${gym.id}/${tipo}.jpg`)
       await uploadBytes(r, archivo)
       const url = await getDownloadURL(r)
-      onChange({ ...branding, [tipo === 'logo' ? 'logoUrl' : 'bannerUrl']: url })
+      onChange({ ...branding, [CAMPO_BRANDING[tipo]]: url })
     } catch (e) {
       console.warn('subir', tipo, e.code ?? e.message)
     } finally {
@@ -86,6 +89,32 @@ export default function IdentidadGym({ gym, onChange, guardar, ocupado }) {
       >
         ✨ Crear mi portada con IA (Gemini)
       </button>
+      {/* Foto de la tarjeta "¡Trae un amigo!" del Inicio de los clientes */}
+      <div>
+        <div style={{ fontSize: 12.5, fontWeight: 600 }}>Foto de "¡Trae un amigo!"</div>
+        <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.5 }}>
+          Sale en el Inicio de tus clientes invitando a entrenar acompañado. Genérala con IA usando tu logo.
+        </div>
+        {branding.amigoUrl && (
+          <div style={{ marginTop: 8, height: 74, borderRadius: 'var(--radius-sm)', background: `center/cover url(${branding.amigoUrl})`, border: '1px solid var(--border)' }} />
+        )}
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <button
+            onClick={async () => {
+              const ok = await copiarPromptAmigoYAbrirGemini(gym)
+              setAvisoIa(ok ? 'Prompt copiado. En Gemini: adjunta tu logo, pega el prompt y genera. Luego súbela aquí con "Subir foto".' : 'Se abrió Gemini, pero copia el prompt manualmente (el portapapeles falló).')
+            }}
+            style={{ flex: 1, background: 'color-mix(in oklab, ' + color + ' 10%, white)', border: '1px solid color-mix(in oklab, ' + color + ' 30%, white)', borderRadius: 'var(--radius-sm)', padding: '10px 0', fontSize: 11.5, fontWeight: 600, color }}
+          >
+            ✨ Crear con IA
+          </button>
+          <button onClick={() => amigoRef.current?.click()} style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 0', fontSize: 11.5, fontWeight: 600, color: '#565652' }}>
+            {subiendo === 'amigo' ? 'Subiendo…' : branding.amigoUrl ? 'Cambiar foto' : 'Subir foto'}
+          </button>
+        </div>
+        <input ref={amigoRef} type="file" accept="image/*" onChange={(e) => subir('amigo', e.target.files?.[0])} style={{ display: 'none' }} />
+      </div>
+
       {avisoIa && (
         <div style={{ fontSize: 10.5, color: 'var(--text-2)', marginTop: -8, lineHeight: 1.55, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
           {avisoIa}

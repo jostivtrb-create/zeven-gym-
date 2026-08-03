@@ -19,7 +19,7 @@ const MENSAJES = {
 
 export default function Entrada() {
   const navigate = useNavigate()
-  const { entrarConGoogle, entrarConCorreo, crearCuentaCorreo, recuperarClave, recargarPerfil } = useAuth()
+  const { usuario, perfil, cargando, entrarConGoogle, entrarConCorreo, crearCuentaCorreo, recuperarClave, recargarPerfil } = useAuth()
   const { setGym } = useGym()
   const [modo, setModo] = useState('entrar') // 'entrar' | 'crear'
   const [correo, setCorreo] = useState('')
@@ -43,6 +43,15 @@ export default function Entrada() {
       }
     })
   }, [])
+
+  // Sesión ya viva (p. ej. la PWA se vuelve a abrir): saltar el login y entrar
+  // directo. Firebase sí recuerda la sesión; lo que faltaba era este redirect.
+  // No aplica si viene de un link/QR de invitación (ese flujo vincula primero).
+  useEffect(() => {
+    if (cargando || !usuario || !perfil) return
+    if (invitacion || sessionStorage.getItem('zg-codigo-invitacion')) return
+    navigate(perfil.gymId || perfil.rol !== 'cliente' ? rutaPorRol(perfil) : '/vincular', { replace: true })
+  }, [cargando, usuario, perfil, invitacion, navigate])
 
   const seguir = async () => {
     const perfil = await recargarPerfil()
@@ -121,6 +130,17 @@ export default function Entrada() {
     } catch {
       setError('No pudimos enviar el correo. Revisa que esté bien escrito.')
     }
+  }
+
+  // Mientras Firebase restaura la sesión guardada, splash en vez del formulario
+  // (evita el destello de "login" a quien ya tiene sesión).
+  if (cargando) {
+    return (
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, background: 'var(--bg)' }}>
+        <div style={{ width: 48, height: 48, borderRadius: 14, background: 'var(--zeven-dark)', color: '#fff', fontSize: 22, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Z</div>
+        <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Cargando…</div>
+      </div>
+    )
   }
 
   return (

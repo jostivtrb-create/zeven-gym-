@@ -331,19 +331,29 @@ export default function Portada() {
           ))}
         </div>
 
-        {/* ===== ¡Trae un amigo! ===== */}
-        <div style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--gym-color) 24%, var(--surface)) 0%, var(--surface) 70%)', border: '1px solid color-mix(in srgb, var(--gym-color) 30%, var(--border))', borderRadius: 'var(--radius-lg)', padding: 16 }}>
-          <div style={{ fontSize: 15.5, fontWeight: 700 }}>¡Trae un amigo! 🤝</div>
-          <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 4, lineHeight: 1.5 }}>
-            Entrenar acompañado <span style={{ color: 'var(--gym-color)', fontWeight: 600, filter: 'brightness(1.25)' }}>motiva el doble</span>. Invítalo y crezcan juntos.
-          </div>
-          <button
-            onClick={() => abrirWhatsAppCompartir(mensajeTraeAmigo(gym.nombre))}
-            style={{ marginTop: 12, background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius)', padding: '10px 18px', fontSize: 11.5, fontWeight: 700, letterSpacing: '.06em' }}
-          >
-            INVITAR POR WHATSAPP ›
-          </button>
-        </div>
+        {/* ===== ¡Trae un amigo! (con la foto del gym si la subió) ===== */}
+        {(() => {
+          const foto = gym.branding?.amigoUrl
+          return (
+            <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-lg)', border: '1px solid color-mix(in srgb, var(--gym-color) 30%, var(--border))', padding: 16, minHeight: foto ? 160 : undefined, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', background: foto ? `center/cover url(${foto})` : 'linear-gradient(135deg, color-mix(in srgb, var(--gym-color) 24%, var(--surface)) 0%, var(--surface) 70%)' }}>
+              {foto && (
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(10,10,12,.86) 0%, rgba(10,10,12,.55) 50%, rgba(10,10,12,.18) 100%)' }} />
+              )}
+              <div style={{ position: 'relative', maxWidth: foto ? '68%' : undefined, textShadow: foto ? '0 1px 8px rgba(0,0,0,.6)' : 'none' }}>
+                <div style={{ fontSize: 15.5, fontWeight: 700, color: foto ? '#fff' : 'var(--text)' }}>¡Trae un amigo! 🤝</div>
+                <div style={{ fontSize: 12, color: foto ? 'rgba(255,255,255,.85)' : 'var(--text-2)', marginTop: 4, lineHeight: 1.5 }}>
+                  Entrenar acompañado <span style={{ color: 'var(--gym-color)', fontWeight: 600, filter: 'brightness(1.35)' }}>motiva el doble</span>. Invítalo y crezcan juntos.
+                </div>
+                <button
+                  onClick={() => abrirWhatsAppCompartir(mensajeTraeAmigo(gym.nombre))}
+                  style={{ marginTop: 12, background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius)', padding: '10px 18px', fontSize: 11.5, fontWeight: 700, letterSpacing: '.06em', boxShadow: foto ? '0 4px 14px rgba(0,0,0,.35)' : 'none' }}
+                >
+                  INVITAR POR WHATSAPP ›
+                </button>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* ===== Horarios ===== */}
         {(gym.horarios ?? []).length > 0 && (
