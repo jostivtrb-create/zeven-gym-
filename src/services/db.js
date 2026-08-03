@@ -420,6 +420,12 @@ export async function vincularGym(user, gym, datosExtra = {}) {
    si vuelve a entrar con el mismo código, recupera su historial. */
 export async function desvincularGym(uid) {
   await updateDoc(doc(db, 'usuarios', uid), { gymId: null, rutinaId: null })
+  // La PWA deja de presentarse con la identidad de ese gimnasio
+  try {
+    localStorage.removeItem('zg-gym-codigo')
+    localStorage.removeItem('zg-gym-nombre')
+    localStorage.removeItem('zg-gym-logo')
+  } catch { /* sin localStorage no pasa nada */ }
 }
 
 /* Corrige solo la fecha de vencimiento, sin registrar un pago nuevo. */

@@ -18,6 +18,28 @@
       rel="stylesheet"
     />
     <title>Zeven Gym</title>
+    <script>
+      /* Identidad del gimnasio ANTES de que el navegador lea el manifest.
+         Chrome captura el manifest al cargar la página: si el usuario ya entró
+         a su gym alguna vez (queda en localStorage), la PWA se instala con el
+         nombre y el logo de SU gimnasio, no con los de Zeven. */
+      try {
+        var zgCodigo = localStorage.getItem('zg-gym-codigo')
+        var zgLogo = localStorage.getItem('zg-gym-logo')
+        var zgNombre = localStorage.getItem('zg-gym-nombre')
+        if (zgCodigo) {
+          document.querySelector('link[rel="manifest"]').href = '/api/manifest?g=' + encodeURIComponent(zgCodigo)
+        }
+        if (zgLogo) {
+          document.querySelector('link[rel="icon"]').href = zgLogo
+          document.querySelector('link[rel="apple-touch-icon"]').href = zgLogo
+        }
+        if (zgNombre) {
+          document.querySelector('meta[name="apple-mobile-web-app-title"]').setAttribute('content', zgNombre)
+          document.title = zgNombre
+        }
+      } catch (e) { /* sin localStorage: se queda la identidad Zeven */ }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
+import { useGym } from '../context/ThemeContext'
 
 /* Botón/aviso de instalación de la PWA (patrón skill instalar-app-mobil):
    - Android/Chrome: usa beforeinstallprompt
-   - iOS: modal con instrucciones (Compartir → Añadir a pantalla de inicio) */
+   - iOS: modal con instrucciones (Compartir → Añadir a pantalla de inicio)
+   Se presenta con la identidad del gimnasio del usuario, no con la de Zeven. */
 
 const esIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent)
 const yaInstalada = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone
 
 export default function InstallPrompt() {
+  const { gym } = useGym()
   const [evento, setEvento] = useState(null)
   const [mostrarIos, setMostrarIos] = useState(false)
   const [oculto, setOculto] = useState(() => localStorage.getItem('zg-install-oculto') === '1')
@@ -44,9 +47,13 @@ export default function InstallPrompt() {
   return (
     <>
       <div style={{ position: 'fixed', left: 16, right: 16, bottom: 76, zIndex: 60, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: 'var(--shadow-pop)', maxWidth: 448, margin: '0 auto' }}>
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--zeven-dark)', color: '#fff', fontWeight: 700, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>Z</div>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--gym-color)', color: '#fff', fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', overflow: 'hidden' }}>
+          {gym?.branding?.logoUrl
+            ? <img src={gym.branding.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : (gym?.nombre ?? 'Z').split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()}
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 600 }}>Instala la app en tu celular</div>
+          <div style={{ fontSize: 12.5, fontWeight: 600 }}>Instala la app de {gym?.nombre ?? 'tu gimnasio'}</div>
           <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Acceso directo, pantalla completa y rutina offline</div>
         </div>
         <button onClick={instalar} style={{ background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '8px 12px', fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap' }}>Instalar</button>

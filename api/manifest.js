@@ -42,13 +42,15 @@ async function buscarGym(codigo) {
 
 export default async function handler(req, res) {
   const codigo = (req.query?.g ?? '').toString().trim()
-  let manifest = { ...POR_DEFECTO, start_url: '/', scope: '/' }
+  let manifest = { ...POR_DEFECTO, id: '/', start_url: '/', scope: '/' }
 
   if (codigo) {
     try {
       const gym = await buscarGym(codigo)
       if (gym?.nombre) {
         manifest = {
+          // id propio por gimnasio: cada gym es una app distinta en el celular
+          id: `/?gym=${gym.codigo}`,
           name: gym.nombre,
           short_name: gym.nombre.length > 12 ? gym.nombre.slice(0, 12) : gym.nombre,
           description: `La app de ${gym.nombre}. Tu rutina, tu progreso y tu membresía.`,
