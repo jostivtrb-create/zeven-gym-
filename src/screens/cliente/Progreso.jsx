@@ -1,14 +1,28 @@
 import { useEffect, useState } from 'react'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import { storage } from '../../firebase'
 import { useAuth } from '../../context/AuthContext'
-import { listarProgreso, guardarMedidasHoy, calcularRacha, obtenerPerfil, actualizarUsuario } from '../../services/db'
-import { doc, setDoc } from 'firebase/firestore'
+import { listarProgreso, guardarMedidasHoy, calcularRacha } from '../../services/db'
+import { doc, setDoc, deleteDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 
 const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }
 const fmt = (n) => String(n).replace('.', ',')
 const MES_CORTO = new Intl.DateTimeFormat('es-CO', { month: 'short' })
+const FECHA_FOTO = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
+const DIA_MS = 86400000
+
+const textoFecha = (iso) => FECHA_FOTO.format(new Date(iso + 'T12:00:00'))
+
+/* Cuánto tiempo separa la primera foto de la última, en palabras. */
+function distanciaTexto(desde, hasta) {
+  const dias = Math.round((new Date(hasta + 'T12:00:00') - new Date(desde + 'T12:00:00')) / DIA_MS)
+  if (dias < 1) return 'Del mismo día'
+  if (dias < 14) return `${dias} día${dias === 1 ? '' : 's'} de diferencia`
+  if (dias < 60) return `${Math.round(dias / 7)} semanas de diferencia`
+  const meses = Math.round(dias / 30)
+  return `${meses} ${meses === 1 ? 'mes' : 'meses'} de diferencia`
+}
 
 export default function Progreso() {
   const { perfil } = useAuth()
@@ -16,30 +30,12 @@ export default function Progreso() {
   const [editando, setEditando] = useState(false)
   const [form, setForm] = useState({ peso: '', cintura: '', brazo: '' })
   const [subiendo, setSubiendo] = useState(false)
-  const [metas, setMetas] = useState({ metaPeso: '', metaEntrenosMes: '' })
-  const [metasGuardadas, setMetasGuardadas] = useState(false)
+  const [fotoAbierta, setFotoAbierta] = useState(null)
+  const [confirmandoBorrar, setConfirmandoBorrar] = useState(null)
+  const [borrando, setBorrando] = useState(false)
 
   const cargar = () => perfil?.uid && listarProgreso(perfil.uid).then(setProgreso).catch(() => setProgreso([]))
-  useEffect(() => {
-    cargar()
-    // Metas frescas desde Firestore (alimentan el anillo y el contador del Inicio)
-    if (perfil?.uid) {
-      obtenerPerfil(perfil.uid)
-        .then((p) => p && setMetas({ metaPeso: p.metaPeso ?? '', metaEntrenosMes: p.metaEntrenosMes ?? '' }))
-        .catch(() => {})
-    }
-  }, [perfil?.uid])
-
-  const guardarMetas = async () => {
-    const metaPeso = parseFloat(metas.metaPeso)
-    const metaEntrenosMes = parseInt(metas.metaEntrenosMes, 10)
-    await actualizarUsuario(perfil.uid, {
-      metaPeso: Number.isNaN(metaPeso) ? null : metaPeso,
-      metaEntrenosMes: Number.isNaN(metaEntrenosMes) ? null : metaEntrenosMes,
-    })
-    setMetasGuardadas(true)
-    setTimeout(() => setMetasGuardadas(false), 2500)
-  }
+  useEffect(() => { cargar() }, [perfil?.uid])
 
   const lista = progreso ?? []
   const racha = calcularRacha(lista)
@@ -84,15 +80,36 @@ export default function Progreso() {
     setSubiendo(true)
     try {
       const fecha = new Date().toISOString().slice(0, 10)
-      const r = ref(storage, `usuarios/${perfil.uid}/fotos/${fecha}-${Date.now()}.jpg`)
+      const ruta = `usuarios/${perfil.uid}/fotos/${fecha}-${Date.now()}.jpg`
+      const r = ref(storage, ruta)
       await uploadBytes(r, archivo)
       const url = await getDownloadURL(r)
-      await setDoc(doc(db, 'usuarios', perfil.uid, 'progreso', `foto-${Date.now()}`), { tipo: 'foto', fecha, url })
+      // Se guarda la ruta además de la url: así borrarla después es directo
+      await setDoc(doc(db, 'usuarios', perfil.uid, 'progreso', `foto-${Date.now()}`), { tipo: 'foto', fecha, url, ruta })
       await cargar()
     } catch (err) {
       console.warn('subirFoto:', err.code ?? err.message)
     } finally {
       setSubiendo(false)
+    }
+  }
+
+  /* Borrar una foto: primero el archivo, después el registro. Si el archivo ya
+     no estuviera, igual se quita de la lista para que no quede una foto rota. */
+  const borrarFoto = async (foto) => {
+    setBorrando(true)
+    try {
+      await deleteObject(ref(storage, foto.ruta ?? foto.url)).catch((e) => {
+        if (e.code !== 'storage/object-not-found') throw e
+      })
+      await deleteDoc(doc(db, 'usuarios', perfil.uid, 'progreso', foto.id))
+      setFotoAbierta(null)
+      setConfirmandoBorrar(null)
+      await cargar()
+    } catch (err) {
+      console.warn('borrarFoto:', err.code ?? err.message)
+    } finally {
+      setBorrando(false)
     }
   }
 
@@ -139,27 +156,6 @@ export default function Progreso() {
                     <div style={{ fontSize: 10, fontWeight: l.logrado ? 600 : 500, marginTop: 6, color: l.logrado ? 'inherit' : 'var(--text-4)' }}>{l.nombre}</div>
                   </div>
                 ))}
-              </div>
-            </div>
-
-            <div style={{ ...card, padding: 16 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 600 }}>Mis metas 🎯</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3, lineHeight: 1.5 }}>
-                Le dan vida al anillo de progreso y al contador de entrenos de tu Inicio.
-              </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                {[
-                  ['metaPeso', 'Peso meta (kg)', '78'],
-                  ['metaEntrenosMes', 'Entrenos al mes', '20'],
-                ].map(([k, label, ph]) => (
-                  <div key={k} style={{ flex: 1 }}>
-                    <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginBottom: 4 }}>{label}</div>
-                    <input type="number" inputMode="decimal" value={metas[k]} onChange={(e) => setMetas({ ...metas, [k]: e.target.value })} placeholder={ph} style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 10px', fontSize: 13, fontWeight: 600, outline: 'none', background: 'var(--surface-2)', color: 'var(--text)', boxSizing: 'border-box' }} />
-                  </div>
-                ))}
-                <button onClick={guardarMetas} style={{ alignSelf: 'flex-end', background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '10px 14px', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>
-                  {metasGuardadas ? '✓ Listo' : 'Guardar'}
-                </button>
               </div>
             </div>
 
@@ -216,15 +212,52 @@ export default function Progreso() {
                 <div style={{ fontSize: 13.5, fontWeight: 600 }}>Fotos de progreso</div>
                 <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>Privadas: solo tú las ves</div>
               </div>
-              <div style={{ display: 'flex', gap: 10, marginTop: 12, overflowX: 'auto' }}>
-                {fotos.slice(-4).map((f) => (
-                  <img key={f.id} src={f.url} alt={f.fecha} style={{ flex: '0 0 31%', aspectRatio: '3/4', borderRadius: 'var(--radius)', objectFit: 'cover' }} />
+
+              {/* Antes y después: lo que de verdad se disfruta de estas fotos */}
+              {fotos.length >= 2 && (
+                <div style={{ marginTop: 12, background: 'var(--surface-2)', borderRadius: 'var(--radius)', padding: 10 }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {[['Antes', fotos[0]], ['Ahora', fotos.at(-1)]].map(([etiqueta, f]) => (
+                      <div key={etiqueta} style={{ flex: 1, minWidth: 0 }}>
+                        <img
+                          src={f.url} alt={etiqueta} onClick={() => setFotoAbierta(f)}
+                          style={{ width: '100%', aspectRatio: '3/4', borderRadius: 'var(--radius-sm)', objectFit: 'cover', cursor: 'zoom-in', display: 'block' }}
+                        />
+                        <div style={{ fontSize: 10.5, fontWeight: 600, marginTop: 5 }}>{etiqueta}</div>
+                        <div style={{ fontSize: 9.5, color: 'var(--text-3)' }}>{textoFecha(f.fecha)}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 10.5, color: 'var(--gym-color-text)', fontWeight: 600, textAlign: 'center', marginTop: 8 }}>
+                    {distanciaTexto(fotos[0].fecha, fotos.at(-1).fecha)}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 12, overflowX: 'auto', scrollbarWidth: 'none' }}>
+                {fotos.map((f) => (
+                  <div key={f.id} style={{ flex: '0 0 31%' }}>
+                    <img
+                      src={f.url} alt={f.fecha} onClick={() => setFotoAbierta(f)}
+                      style={{ width: '100%', aspectRatio: '3/4', borderRadius: 'var(--radius)', objectFit: 'cover', cursor: 'zoom-in', display: 'block' }}
+                    />
+                    <div style={{ fontSize: 9.5, color: 'var(--text-3)', textAlign: 'center', marginTop: 4 }}>{textoFecha(f.fecha)}</div>
+                  </div>
                 ))}
-                <label style={{ flex: '0 0 31%', aspectRatio: '3/4', borderRadius: 'var(--radius)', border: '1.5px dashed var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: 'var(--text-4)', cursor: 'pointer' }}>
+                <label style={{ flex: '0 0 31%', aspectRatio: '3/4', borderRadius: 'var(--radius)', border: '1.5px dashed var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: 'var(--text-4)', cursor: 'pointer', textAlign: 'center' }}>
                   {subiendo ? 'Subiendo…' : '+ Añadir'}
                   <input type="file" accept="image/*" onChange={subirFoto} style={{ display: 'none' }} />
                 </label>
               </div>
+
+              {fotos.length === 0 && (
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 10, lineHeight: 1.55 }}>
+                  Tómate una hoy y otra en un mes: el cambio se ve mucho mejor en fotos que en la balanza.
+                </div>
+              )}
+              {fotos.length > 0 && (
+                <div style={{ fontSize: 10.5, color: 'var(--text-4)', marginTop: 10 }}>Toca una foto para verla en grande o borrarla.</div>
+              )}
             </div>
 
             {editando ? (
@@ -254,6 +287,45 @@ export default function Progreso() {
           </>
         )}
       </div>
+
+      {/* Foto en grande. Borrar vive aquí dentro: así la cuadrícula queda
+          limpia y nadie borra una foto sin querer. */}
+      {fotoAbierta && (
+        <div
+          onClick={() => setFotoAbierta(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(8,8,10,.92)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px 16px calc(24px + env(safe-area-inset-bottom))' }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420, width: '100%', margin: '0 auto' }}>
+            <img src={fotoAbierta.url} alt={fotoAbierta.fecha} style={{ width: '100%', maxHeight: '62vh', objectFit: 'contain', borderRadius: 'var(--radius-lg)', display: 'block' }} />
+            <div style={{ color: '#fff', fontSize: 13, fontWeight: 600, textAlign: 'center', marginTop: 12 }}>{textoFecha(fotoAbierta.fecha)}</div>
+
+            {confirmandoBorrar === fotoAbierta.id ? (
+              <div style={{ marginTop: 14, textAlign: 'center' }}>
+                <div style={{ color: 'rgba(255,255,255,.85)', fontSize: 12.5, lineHeight: 1.5 }}>
+                  ¿Borrar esta foto? No se puede recuperar.
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  <button onClick={() => setConfirmandoBorrar(null)} style={{ flex: 1, border: '1px solid rgba(255,255,255,.3)', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 0', fontSize: 13, fontWeight: 600 }}>
+                    Conservarla
+                  </button>
+                  <button onClick={() => borrarFoto(fotoAbierta)} disabled={borrando} style={{ flex: 1, background: '#dc2626', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 0', fontSize: 13, fontWeight: 600, opacity: borrando ? 0.6 : 1 }}>
+                    {borrando ? 'Borrando…' : 'Sí, borrar'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                <button onClick={() => setFotoAbierta(null)} style={{ flex: 1, border: '1px solid rgba(255,255,255,.3)', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 0', fontSize: 13, fontWeight: 600 }}>
+                  Cerrar
+                </button>
+                <button onClick={() => setConfirmandoBorrar(fotoAbierta.id)} style={{ flex: 'none', padding: '12px 18px', color: '#fca5a5', fontSize: 13, fontWeight: 600 }}>
+                  Borrar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   )
 }

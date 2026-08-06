@@ -1,18 +1,24 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // Al BORRAR, request.resource es null: por eso el límite de tamaño solo se
+    // exige cuando hay archivo entrante (una subida). Sin esto, borrar daba
+    // permiso denegado y el cliente no podía eliminar sus fotos de progreso.
+    function tamanoOk() {
+      return request.resource == null || request.resource.size < 8 * 1024 * 1024;
+    }
+
     // Fotos de progreso: PRIVADAS, solo el dueño (Etapa 10)
     match /usuarios/{uid}/{resto=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid
-        && request.resource.size < 8 * 1024 * 1024;
       allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid && tamanoOk();
     }
     // Recursos del gimnasio (logo, banner, gifs de ejercicios): lectura pública,
     // escritura del superadmin o del admin del gym (validado por token custom no disponible:
     // se valida con el doc usuarios en Firestore no accesible aquí, así que se restringe por carpeta uid del admin)
     match /gimnasios/{gymId}/{resto=**} {
       allow read: if true;
-      allow write: if request.auth != null && request.resource.size < 8 * 1024 * 1024;
+      allow write: if request.auth != null && tamanoOk();
     }
   }
 }

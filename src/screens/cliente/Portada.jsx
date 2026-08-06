@@ -4,7 +4,7 @@ import { useGym } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 import {
   listarComunicados, obtenerMembresia, obtenerRutina, listarEjerciciosGym,
-  listarProgreso, calcularRacha, obtenerPerfil,
+  listarProgreso, calcularRacha,
 } from '../../services/db'
 import { abrirWhatsAppCompartir, mensajeTraeAmigo } from '../../services/whatsapp'
 import FiguraMuscular from '../../components/FiguraMuscular'
@@ -17,25 +17,6 @@ const DIA_MS = 86400000
 const DIAS_KEYS = ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab']
 const FECHA_LARGA = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long' })
 
-/* Anillo de progreso hacia la meta de peso. */
-function Anillo({ pct }) {
-  const R = 21.5
-  const C = 2 * Math.PI * R
-  return (
-    <svg width="54" height="54" viewBox="0 0 54 54" style={{ flex: 'none' }}>
-      <circle cx="27" cy="27" r={R} stroke="var(--track)" strokeWidth="5.5" fill="none" />
-      <circle
-        cx="27" cy="27" r={R} stroke="var(--gym-color)" strokeWidth="5.5" fill="none"
-        strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - pct)}
-        transform="rotate(-90 27 27)" style={{ transition: 'stroke-dashoffset .6s' }}
-      />
-      <text x="27" y="31" textAnchor="middle" style={{ font: '700 11.5px Poppins,sans-serif' }} fill="var(--text)">
-        {Math.round(pct * 100)}%
-      </text>
-    </svg>
-  )
-}
-
 export default function Portada() {
   const { gym } = useGym()
   const { perfil } = useAuth()
@@ -45,7 +26,6 @@ export default function Portada() {
   const [rutina, setRutina] = useState(undefined) // undefined=cargando, null=sin rutina
   const [biblioteca, setBiblioteca] = useState({})
   const [progreso, setProgreso] = useState([])
-  const [metas, setMetas] = useState({ metaPeso: null, metaEntrenosMes: null })
   const [verAvisos, setVerAvisos] = useState(false)
 
   useEffect(() => {
@@ -57,10 +37,6 @@ export default function Portada() {
       .then((lista) => setBiblioteca(Object.fromEntries(lista.map((e) => [e.id, e]))))
       .catch(() => {})
     listarProgreso(perfil.uid).then(setProgreso).catch(() => {})
-    // Metas frescas (pueden haberse editado en Progreso después del login)
-    obtenerPerfil(perfil.uid)
-      .then((p) => p && setMetas({ metaPeso: p.metaPeso ?? null, metaEntrenosMes: p.metaEntrenosMes ?? null }))
-      .catch(() => {})
     if (perfil.rutinaId) obtenerRutina(gym.id, perfil.rutinaId).then((r) => setRutina(r ?? null))
     else setRutina(null)
   }, [gym.id, perfil?.uid, perfil?.rutinaId])
@@ -95,19 +71,17 @@ export default function Portada() {
   const extraHoy = Math.max(0, (sesionHoy?.ejercicios?.length ?? 0) - nombresHoy.length)
   const gruposHoy = [...new Set(ejerciciosHoy.map((e) => e.grupo).filter(Boolean))]
 
-  /* Progreso + metas */
+  /* Progreso */
   const racha = useMemo(() => calcularRacha(progreso), [progreso])
   const mesActual = new Date().toISOString().slice(0, 7)
   const entrenosMes = new Set(progreso.filter((p) => p.tipo === 'sesion' && (p.fecha ?? '').startsWith(mesActual)).map((p) => p.fecha)).size
   const pesos = progreso.filter((p) => p.tipo === 'medidas' && p.peso != null)
   const pesoActual = pesos.at(-1)?.peso ?? null
   const pesoInicial = pesos[0]?.peso ?? null
-  const { metaPeso, metaEntrenosMes } = metas
-  const pctMeta = (() => {
-    if (metaPeso == null || pesoActual == null || pesoInicial == null) return null
-    if (pesoInicial === metaPeso) return pesoActual === metaPeso ? 1 : 0
-    return Math.max(0, Math.min(1, (pesoInicial - pesoActual) / (pesoInicial - metaPeso)))
-  })()
+  // Cambio real desde su primera medida: sin configurar nada y siempre cierto
+  const cambioPeso = pesoActual != null && pesoInicial != null && pesoActual !== pesoInicial
+    ? Math.round((pesoActual - pesoInicial) * 10) / 10
+    : null
   const nivel = rutina?.nivel ? rutina.nivel[0].toUpperCase() + rutina.nivel.slice(1) : null
 
   /* Campanita de comunicados: no leídos = más nuevos que la última vez que abrió */
@@ -295,19 +269,18 @@ export default function Portada() {
           <div style={{ ...card, padding: 14, display: 'flex', flexDirection: 'column' }}>
             <div style={{ ...eyebrow, display: 'flex', alignItems: 'center', gap: 5 }}>📊 <span>Mi progreso</span></div>
             {pesoActual != null ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 9 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, color: 'var(--text-2)' }}>Peso actual</div>
-                  <div style={{ fontSize: 21, fontWeight: 700, lineHeight: 1.1 }}>{String(pesoActual).replace('.', ',')} <span style={{ fontSize: 12, fontWeight: 600 }}>kg</span></div>
-                  {metaPeso != null ? (
-                    <div style={{ fontSize: 11, color: 'var(--gym-color-text)', fontWeight: 600, marginTop: 5, whiteSpace: 'nowrap' }}>Meta: {String(metaPeso).replace('.', ',')} kg</div>
-                  ) : (
-                    <button onClick={() => navigate('/app/progreso')} style={{ fontSize: 11, color: 'var(--gym-color-text)', fontWeight: 600, marginTop: 5, padding: 0 }}>
-                      Definir meta ›
-                    </button>
-                  )}
-                </div>
-                {pctMeta != null && <Anillo pct={pctMeta} />}
+              <div style={{ marginTop: 9 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-2)' }}>Peso actual</div>
+                <div style={{ fontSize: 21, fontWeight: 700, lineHeight: 1.1 }}>{String(pesoActual).replace('.', ',')} <span style={{ fontSize: 12, fontWeight: 600 }}>kg</span></div>
+                {cambioPeso != null ? (
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--gym-color-text)', marginTop: 5 }}>
+                    {cambioPeso < 0 ? '▼' : '▲'} {String(Math.abs(cambioPeso)).replace('.', ',')} kg desde que empezaste
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 5, lineHeight: 1.4 }}>
+                    Registra tu peso cada semana y verás el cambio aquí.
+                  </div>
+                )}
               </div>
             ) : (
               <button onClick={() => navigate('/app/progreso')} style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 9, lineHeight: 1.55, textAlign: 'left', padding: 0 }}>
@@ -321,7 +294,7 @@ export default function Portada() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
           {[
             { icono: '🔥', titulo: 'Racha actual', valor: `${racha.actual} día${racha.actual === 1 ? '' : 's'}`, pie: racha.actual > 0 ? '¡Sigue así!' : '¡Arranca hoy!' },
-            { icono: '💪', titulo: 'Entrenamientos', valor: metaEntrenosMes ? `${entrenosMes} / ${metaEntrenosMes}` : String(entrenosMes), pie: 'Este mes' },
+            { icono: '💪', titulo: 'Entrenamientos', valor: String(entrenosMes), pie: 'Este mes' },
             { icono: '⭐', titulo: 'Nivel actual', valor: nivel ?? '—', pie: nivel ? '¡Vamos por más!' : 'Según tu rutina' },
           ].map((s) => (
             <div key={s.titulo} style={{ ...card, padding: '12px 8px', textAlign: 'center' }}>
