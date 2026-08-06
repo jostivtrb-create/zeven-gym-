@@ -55,6 +55,16 @@
   --font: 'Poppins', system-ui, -apple-system, sans-serif;
 }
 
+/* Modo CLARO de la app del cliente: tarjetas blancas flotando sobre un lienzo
+   oscuro, para que la foto de portada se funda con la pantalla en vez de
+   cortarse contra un fondo casi blanco. Solo aplica al cliente: los paneles de
+   admin y superadmin usan :root tal cual (fondo claro de toda la vida). */
+.tema-claro {
+  --bg: #0f0f12;
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.55);
+}
+
 /* Tema oscuro premium de la app del CLIENTE (ClienteShell lo activa en <html>).
    Los paneles admin y superadmin siguen en claro. */
 .tema-oscuro {

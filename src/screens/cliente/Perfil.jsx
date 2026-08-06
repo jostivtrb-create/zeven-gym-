@@ -254,7 +254,7 @@ export default function Perfil() {
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12.5, fontWeight: 600 }}>Modo {oscuro ? 'oscuro' : 'claro'}</div>
               <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5 }}>
-                {oscuro ? 'Ideal para entrenar de noche. Toca para pasar a claro.' : 'Fondo claro y luminoso. Toca para volver al oscuro.'}
+                {oscuro ? 'Ideal para entrenar de noche. Toca para pasar a claro.' : 'Tarjetas blancas, más luminosas. Toca para volver al oscuro.'}
               </div>
             </div>
             <button onClick={() => setTema(oscuro ? 'claro' : 'oscuro')} aria-pressed={oscuro} aria-label="Cambiar entre modo oscuro y claro" style={{ width: 42, height: 24, borderRadius: 99, background: oscuro ? 'var(--gym-color)' : 'var(--border-2)', position: 'relative', flex: 'none', transition: 'background .2s' }}>

@@ -7,11 +7,13 @@ import { useGym } from '../../context/ThemeContext'
 export default function ClienteShell() {
   const { tema } = useGym()
 
-  // El cliente elige su tema (oscuro por defecto) desde Perfil.
-  // Admin y superadmin siempre en claro: por eso la clase se quita al salir.
+  // El cliente elige su tema (oscuro por defecto) desde Perfil. Ambos temas
+  // son propios del cliente: al salir a admin/superadmin se quitan los dos.
   useEffect(() => {
-    document.documentElement.classList.toggle('tema-oscuro', tema === 'oscuro')
-    return () => document.documentElement.classList.remove('tema-oscuro')
+    const raiz = document.documentElement
+    raiz.classList.toggle('tema-oscuro', tema === 'oscuro')
+    raiz.classList.toggle('tema-claro', tema === 'claro')
+    return () => raiz.classList.remove('tema-oscuro', 'tema-claro')
   }, [tema])
 
   return (
