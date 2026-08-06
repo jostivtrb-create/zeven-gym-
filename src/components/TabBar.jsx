@@ -31,7 +31,7 @@ const tabs = [
   },
   {
     to: '/app/calcular',
-    label: 'Calcular',
+    label: 'Números',
     icon: (
       <>
         <rect x="5" y="3" width="14" height="18" rx="2" />
