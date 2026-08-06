@@ -17,9 +17,26 @@ const GYM_NEUTRO = {
   politicas: { vigencia: 'desde_pago', permitirCongelar: true, bloquearAlVencer: false },
 }
 
+/* Tema de la app del cliente: oscuro por defecto (el diseño nació oscuro),
+   pero cada quien puede pasarlo a claro desde su Perfil. Se recuerda en el
+   celular. Los paneles de admin y superadmin siempre van en claro. */
+const leerTema = () => {
+  try {
+    return localStorage.getItem('zg-tema') === 'claro' ? 'claro' : 'oscuro'
+  } catch {
+    return 'oscuro'
+  }
+}
+
 export function ThemeProvider({ children }) {
   const [gym, setGym] = useState(GYM_NEUTRO)
   const [soporte, setSoporte] = useState(null) // { gymNombre } cuando el superadmin entra a un panel ajeno
+  const [tema, setTemaState] = useState(leerTema)
+
+  const setTema = (nuevo) => {
+    setTemaState(nuevo)
+    try { localStorage.setItem('zg-tema', nuevo) } catch { /* sin localStorage: solo esta sesión */ }
+  }
 
   useEffect(() => {
     const color = gym?.branding?.color
@@ -61,7 +78,7 @@ export function ThemeProvider({ children }) {
   }, [gym])
 
   return (
-    <ThemeContext.Provider value={{ gym, setGym, soporte, setSoporte }}>
+    <ThemeContext.Provider value={{ gym, setGym, soporte, setSoporte, tema, setTema }}>
       {children}
     </ThemeContext.Provider>
   )

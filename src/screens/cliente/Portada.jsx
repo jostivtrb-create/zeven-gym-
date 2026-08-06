@@ -128,7 +128,9 @@ export default function Portada() {
       {/* ===== HERO: portada del gym con degradado oscuro ===== */}
       <div style={{ position: 'relative', minHeight: banner ? 300 : 220, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '108px 20px 18px', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, background: banner ? `center/cover url(${banner})` : `linear-gradient(160deg, color-mix(in srgb, var(--gym-color) 42%, #0c0c0e) 0%, #0c0c0e 85%)` }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(12,12,14,.42) 0%, rgba(12,12,14,.25) 45%, var(--bg) 100%)' }} />
+        {/* Velo oscuro sobre la foto (el saludo va en blanco) y, al final,
+            fundido al fondo de la app: sirve igual en tema oscuro y en claro. */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(12,12,14,.42) 0%, rgba(12,12,14,.28) 45%, rgba(12,12,14,.55) 90%, var(--bg) 100%)' }} />
 
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '54px 16px 0 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 42, height: 42, borderRadius: 12, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 15, color: 'var(--gym-color)', overflow: 'hidden', flex: 'none', boxShadow: '0 4px 14px rgba(0,0,0,.4)' }}>
@@ -180,7 +182,7 @@ export default function Portada() {
         {/* ===== Alertas de membresía ===== */}
         {!membresia && (
           <div style={{ background: 'color-mix(in oklab, var(--gym-color) 10%, var(--mix-base))', border: '1px solid color-mix(in oklab, var(--gym-color) 30%, var(--mix-base))', borderRadius: 'var(--radius-md)', padding: '12px 14px' }}>
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--gym-color)', filter: 'brightness(1.25)' }}>¡Bienvenido a {gym.nombre}! 🎉</div>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--gym-color-text)' }}>¡Bienvenido a {gym.nombre}! 🎉</div>
             <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 3, lineHeight: 1.5 }}>
               Ya quedaste registrado. Cuando pagues en recepción, tu plan se activa aquí mismo y verás tu rutina.
             </div>
@@ -298,9 +300,9 @@ export default function Portada() {
                   <div style={{ fontSize: 11, color: 'var(--text-2)' }}>Peso actual</div>
                   <div style={{ fontSize: 21, fontWeight: 700, lineHeight: 1.1 }}>{String(pesoActual).replace('.', ',')} <span style={{ fontSize: 12, fontWeight: 600 }}>kg</span></div>
                   {metaPeso != null ? (
-                    <div style={{ fontSize: 11, color: 'var(--gym-color)', fontWeight: 600, marginTop: 5, filter: 'brightness(1.25)', whiteSpace: 'nowrap' }}>Meta: {String(metaPeso).replace('.', ',')} kg</div>
+                    <div style={{ fontSize: 11, color: 'var(--gym-color-text)', fontWeight: 600, marginTop: 5, whiteSpace: 'nowrap' }}>Meta: {String(metaPeso).replace('.', ',')} kg</div>
                   ) : (
-                    <button onClick={() => navigate('/app/progreso')} style={{ fontSize: 11, color: 'var(--gym-color)', fontWeight: 600, marginTop: 5, padding: 0, filter: 'brightness(1.25)' }}>
+                    <button onClick={() => navigate('/app/progreso')} style={{ fontSize: 11, color: 'var(--gym-color-text)', fontWeight: 600, marginTop: 5, padding: 0 }}>
                       Definir meta ›
                     </button>
                   )}
@@ -326,7 +328,7 @@ export default function Portada() {
               <div style={{ fontSize: 16 }}>{s.icono}</div>
               <div style={{ fontSize: 9.5, color: 'var(--text-3)', fontWeight: 600, marginTop: 4 }}>{s.titulo}</div>
               <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.valor}</div>
-              <div style={{ fontSize: 9.5, color: 'var(--gym-color)', fontWeight: 600, marginTop: 2, filter: 'brightness(1.25)' }}>{s.pie}</div>
+              <div style={{ fontSize: 9.5, color: 'var(--gym-color-text)', fontWeight: 600, marginTop: 2 }}>{s.pie}</div>
             </div>
           ))}
         </div>
@@ -342,7 +344,7 @@ export default function Portada() {
               <div style={{ position: 'relative', maxWidth: foto ? '68%' : undefined, textShadow: foto ? '0 1px 8px rgba(0,0,0,.6)' : 'none' }}>
                 <div style={{ fontSize: 15.5, fontWeight: 700, color: foto ? '#fff' : 'var(--text)' }}>¡Trae un amigo! 🤝</div>
                 <div style={{ fontSize: 12, color: foto ? 'rgba(255,255,255,.85)' : 'var(--text-2)', marginTop: 4, lineHeight: 1.5 }}>
-                  Entrenar acompañado <span style={{ color: 'var(--gym-color)', fontWeight: 600, filter: 'brightness(1.35)' }}>motiva el doble</span>. Invítalo y crezcan juntos.
+                  Entrenar acompañado <span style={{ color: foto ? 'var(--gym-color)' : 'var(--gym-color-text)', fontWeight: 600, filter: foto ? 'brightness(1.35)' : 'none' }}>motiva el doble</span>. Invítalo y crezcan juntos.
                 </div>
                 <button
                   onClick={() => abrirWhatsAppCompartir(mensajeTraeAmigo(gym.nombre))}

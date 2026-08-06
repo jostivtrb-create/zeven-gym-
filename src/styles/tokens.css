@@ -4,6 +4,9 @@
   --gym-color: #16a34a;
   --gym-color-dark: color-mix(in srgb, var(--gym-color) 70%, #000);
   --gym-color-soft: color-mix(in srgb, var(--gym-color) 10%, #fff);
+  /* Color del gym para TEXTO: en claro va tal cual; en oscuro se aclara para
+     que se lea bien sobre el fondo negro. */
+  --gym-color-text: var(--gym-color);
 
   --bg: #fafaf9;
   --surface: #ffffff;
@@ -20,6 +23,9 @@
   --mix-base: #ffffff;
   --hairline: #f2f2f0;
   --track: #f0f0ee;
+  /* Figura muscular: silueta y músculos que hoy no se trabajan */
+  --figura-base: #e6e6e1;
+  --figura-off: #d6d6cf;
 
   --warning-text: #92400e;
   --warning-bg: #fef3c7;
@@ -66,6 +72,8 @@
   --mix-base: #17171a;
   --hairline: #232328;
   --track: #2b2b31;
+  --figura-base: #202024;
+  --figura-off: #2e2e35;
 
   --warning-text: #fcd34d;
   --warning-bg: #2b210b;
@@ -80,6 +88,7 @@
   --ok-bg: #0f2b19;
 
   --gym-color-soft: color-mix(in srgb, var(--gym-color) 16%, #17171a);
+  --gym-color-text: color-mix(in srgb, var(--gym-color) 72%, #fff);
 
   --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45);
   --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.55);

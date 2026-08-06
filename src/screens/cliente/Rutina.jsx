@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useGym } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 import { obtenerRutina, obtenerMembresia, listarProgreso, guardarSesionHoy, listarEjerciciosGym } from '../../services/db'
+import { sugerirValor, fichaEjercicio, textoValor, TIPOS } from '../../services/pesosSugeridos'
 
 const DIAS = [
   { key: 'lun', letra: 'L' }, { key: 'mar', letra: 'M' }, { key: 'mie', letra: 'X' },
@@ -32,7 +33,8 @@ export default function Rutina() {
   const [rutina, setRutina] = useState(undefined) // undefined=cargando, null=sin rutina
   const [biblioteca, setBiblioteca] = useState({})
   const [sesionHoy, setSesionHoy] = useState({})
-  const [ultimosPesos, setUltimosPesos] = useState({})
+  const [ultimosValores, setUltimosValores] = useState({})
+  const [pesoCorporal, setPesoCorporal] = useState(null)
   const [membresia, setMembresia] = useState(null)
   const [pesoInput, setPesoInput] = useState('')
   const [activo, setActivo] = useState(null)
@@ -53,13 +55,19 @@ export default function Rutina() {
       const sesiones = prog.filter((p) => p.tipo === 'sesion')
       const deHoy = sesiones.find((p) => p.fecha === hoyISO)
       setSesionHoy(deHoy?.ejercicios ?? {})
-      const pesos = {}
+      // Último valor que registró en cada ejercicio: en cuanto existe, manda
+      // sobre cualquier sugerencia automática.
+      const valores = {}
       for (const s of sesiones) {
         for (const [ejId, dato] of Object.entries(s.ejercicios ?? {})) {
-          if (dato?.peso != null) pesos[ejId] = dato.peso
+          const v = dato?.peso ?? dato?.valor
+          if (v != null) valores[ejId] = v
         }
       }
-      setUltimosPesos(pesos)
+      setUltimosValores(valores)
+      // Su peso corporal alimenta el cálculo del punto de partida
+      const medidas = prog.filter((p) => p.tipo === 'medidas' && p.peso != null)
+      setPesoCorporal(medidas.at(-1)?.peso ?? null)
     }).catch(() => {})
   }, [gym.id, perfil?.uid, perfil?.rutinaId])
 
@@ -80,12 +88,17 @@ export default function Rutina() {
       : { titulo: 'Tu rutina está en pausa', texto: 'Tu plan venció. Renueva en recepción y volvemos al entreno. Tu progreso y tu racha te esperan intactos.' }
 
   const completar = async (ej, conPeso) => {
-    const dato = { hecho: true, ...(conPeso && pesoInput ? { peso: Number(pesoInput) } : {}) }
+    // Los kilos van en `peso` (los lee la gráfica de progreso); los minutos y
+    // repeticiones en `valor`, para no mezclar unidades en esa gráfica.
+    const tipo = fichaEjercicio(ej).tipo
+    const campo = tipo === TIPOS.PESO ? 'peso' : 'valor'
+    const numero = conPeso && pesoInput ? Number(pesoInput) : null
+    const dato = { hecho: true, ...(numero != null ? { [campo]: numero } : {}) }
     const nuevos = { ...sesionHoy, [ej.id]: dato }
     setSesionHoy(nuevos)
     setActivo(null)
     setPesoInput('')
-    if (dato.peso != null) setUltimosPesos({ ...ultimosPesos, [ej.id]: dato.peso })
+    if (numero != null) setUltimosValores({ ...ultimosValores, [ej.id]: numero })
     try {
       await guardarSesionHoy(perfil.uid, { ejercicios: nuevos, dia: diaSel, titulo: sesion?.titulo ?? '' })
     } catch (e) {
@@ -175,8 +188,22 @@ export default function Rutina() {
               const ej = { ...info, id: item.ejercicioId ?? `x${idx}`, series: item.series, reps: item.reps, descansoSeg: item.descansoSeg, pesoSugerido: item.pesoSugerido }
               const hecho = esHoy && !!sesionHoy[ej.id]?.hecho
               const abierto = activo === ej.id
-              const pesoHoy = esHoy ? sesionHoy[ej.id]?.peso : null
-              const ultimo = ultimosPesos[ej.id]
+              const datoHoy = esHoy ? sesionHoy[ej.id] : null
+              const valorHoy = datoHoy?.peso ?? datoHoy?.valor ?? null
+              const ultimo = ultimosValores[ej.id]
+
+              /* Qué valor ve el cliente, en orden de mando:
+                 1. el suyo (ya lo registró alguna vez)  2. el que puso su entrenador
+                 3. el punto de partida calculado con su perfil */
+              const ficha = fichaEjercicio(ej)
+              const auto = ultimo == null && ej.pesoSugerido == null
+                ? sugerirValor(ej, perfil ?? {}, pesoCorporal)
+                : null
+              const valorMostrado = ultimo ?? ej.pesoSugerido ?? auto?.valor ?? null
+              const esTiempo = ficha.tipo === TIPOS.TIEMPO
+              // En reps, la prescripción del entrenador (3 × 12) ya manda: no se
+              // le contrapone otra cifra.
+              const muestraValor = ficha.tipo !== TIPOS.REPS && valorMostrado != null
               return (
                 <div
                   key={ej.id}
@@ -204,20 +231,33 @@ export default function Rutina() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13.5, fontWeight: 600 }}>{ej.nombre ?? 'Ejercicio'}</div>
                       <div style={{ fontSize: 11.5, color: 'var(--text-2)', marginTop: 2 }}>
-                        {ej.series} × {ej.reps} · {ej.descansoSeg ?? ej.descanso} s descanso
+                        {esTiempo && valorMostrado != null ? (
+                          <>
+                            {ej.series > 1 ? `${ej.series} × ` : ''}{textoValor(valorMostrado, ficha.tipo, ficha.unidad)}
+                            {ej.series > 1 ? ` · ${ej.descansoSeg ?? ej.descanso} s descanso` : ''}
+                          </>
+                        ) : (
+                          <>{ej.series} × {ej.reps} · {ej.descansoSeg ?? ej.descanso} s descanso</>
+                        )}
                       </div>
                       {ej.nota && <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 3, lineHeight: 1.4 }}>💡 {ej.nota}</div>}
-                      {hecho && pesoHoy != null && (
+                      {hecho && valorHoy != null && (
                         <div style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 600, color: 'var(--gym-color)', background: 'var(--surface-2)', borderRadius: 99, padding: '2px 8px', marginTop: 6 }}>
-                          Hoy: {pesoHoy} kg
+                          Hoy: {textoValor(valorHoy, ficha.tipo, ficha.unidad)}
                         </div>
                       )}
-                      {!hecho && ej.pesoSugerido != null && (
+                      {!hecho && !esTiempo && muestraValor && (
                         <div style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 600, color: 'var(--gym-color)', background: 'color-mix(in oklab, var(--gym-color) 10%, var(--mix-base))', borderRadius: 99, padding: '2px 8px', marginTop: 6 }}>
-                          Sugerido: {ej.pesoSugerido} kg
+                          {ultimo != null ? 'Tu peso: ' : auto ? 'Para empezar: ' : 'Sugerido: '}
+                          {textoValor(valorMostrado, ficha.tipo, ficha.unidad)}
                         </div>
                       )}
-                      {!hecho && ultimo != null && <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 4 }}>Última vez: {ultimo} kg</div>}
+                      {/* Solo cuando de verdad se le mostró una cifra calculada */}
+                      {!hecho && auto != null && ficha.tipo !== TIPOS.REPS && (
+                        <div style={{ fontSize: 10, color: 'var(--text-4)', marginTop: 4, lineHeight: 1.4 }}>
+                          Punto de partida — ajústalo a lo que de verdad puedas.
+                        </div>
+                      )}
                     </div>
                     {hecho ? (
                       <div style={{ width: 26, height: 26, flex: 'none', borderRadius: 99, background: 'var(--gym-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 700 }}>✓</div>
@@ -228,8 +268,10 @@ export default function Rutina() {
                   {abierto && !hecho && esHoy && (
                     <div style={{ display: 'flex', gap: 8, marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '4px 12px' }}>
-                        <input type="number" inputMode="decimal" value={pesoInput} onChange={(e) => setPesoInput(e.target.value)} placeholder={ultimo != null ? String(ultimo) : ej.pesoSugerido != null ? String(ej.pesoSugerido) : '0'} style={{ width: 48, border: 'none', background: 'transparent', fontSize: 13, fontWeight: 600, outline: 'none' }} />
-                        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>kg de hoy</span>
+                        <input type="number" inputMode="decimal" value={pesoInput} onChange={(e) => setPesoInput(e.target.value)} placeholder={valorMostrado != null ? String(valorMostrado) : '0'} style={{ width: 48, border: 'none', background: 'transparent', fontSize: 13, fontWeight: 600, color: 'var(--text)', outline: 'none' }} />
+                        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                          {ficha.tipo === TIPOS.REPS ? 'reps de hoy' : esTiempo ? `${ficha.unidad ?? 'min'} de hoy` : 'kg de hoy'}
+                        </span>
                       </div>
                       <button onClick={() => completar(ej, true)} style={{ background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '9px 16px', fontSize: 12, fontWeight: 600 }}>
                         Guardar y completar

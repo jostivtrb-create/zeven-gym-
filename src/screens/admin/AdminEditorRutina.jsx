@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useGym } from '../../context/ThemeContext'
 import { obtenerRutina, guardarRutina, eliminarRutina, listarEjerciciosGym } from '../../services/db'
 import { GRUPOS } from '../../data/catalogoBase'
+import { fichaEjercicio, TIPOS } from '../../services/pesosSugeridos'
+import { puedeHacerse } from '../../data/maquinas'
 
 const DIAS = [['lun', 'L'], ['mar', 'M'], ['mie', 'X'], ['jue', 'J'], ['vie', 'V'], ['sab', 'S'], ['dom', 'D']]
 const NOMBRES_DIA = { lun: 'Lunes', mar: 'Martes', mie: 'Miércoles', jue: 'Jueves', vie: 'Viernes', sab: 'Sábado', dom: 'Domingo' }
@@ -21,29 +23,88 @@ function Miniatura({ ejercicio, tam = 44 }) {
   )
 }
 
+/* Etiquetas de la dosis según en qué se mide el ejercicio: pedirle "reps" a
+   una caminadora o "kilos" a unas flexiones solo confunde al entrenador. */
+function etiquetasDosis(ficha) {
+  if (ficha.tipo === TIPOS.TIEMPO) {
+    const u = ficha.unidad ?? 'min'
+    return {
+      aviso: `Se mide en ${u === 'seg' ? 'segundos' : 'minutos'}`,
+      campos: [['series', 'Series'], ['descansoSeg', 'Descanso (s)']],
+      valor: { label: `Duración sugerida (${u}) · opcional`, placeholder: 'Vacío = se calcula para cada cliente' },
+    }
+  }
+  if (ficha.tipo === TIPOS.REPS) {
+    return {
+      aviso: 'Se hace con el peso del cuerpo',
+      campos: [['series', 'Series'], ['reps', 'Reps'], ['descansoSeg', 'Descanso (s)']],
+      valor: null, // no se le pide peso: no lleva
+    }
+  }
+  // Ejercicio propio del gym: la app no tiene con qué calcularle un peso,
+  // así que aquí sí conviene que el entrenador ponga uno.
+  const aMedida = ficha.base != null
+  return {
+    aviso: null,
+    campos: [['series', 'Series'], ['reps', 'Reps'], ['descansoSeg', 'Descanso (s)']],
+    valor: {
+      label: `Peso sugerido (kg) · ${aMedida ? 'opcional' : 'recomendado'}`,
+      placeholder: aMedida ? 'Vacío = se calcula para cada cliente' : 'Este ejercicio no se calcula solo',
+    },
+  }
+}
+
+/* Resumen de una línea, en las unidades del ejercicio. */
+function resumenDosis(item, ejercicio) {
+  const ficha = fichaEjercicio(ejercicio)
+  if (ficha.tipo === TIPOS.TIEMPO) {
+    const u = ficha.unidad ?? 'min'
+    const dur = item.pesoSugerido != null ? `${item.pesoSugerido} ${u}` : ficha.base != null ? `a su medida (${u})` : `sin duración (${u})`
+    return `${item.series > 1 ? `${item.series} × ` : ''}${dur}${item.series > 1 ? ` · ${item.descansoSeg} s` : ''}`
+  }
+  const extra =
+    ficha.tipo === TIPOS.REPS ? ''
+      : item.pesoSugerido != null ? ` · ${item.pesoSugerido} kg`
+        : ficha.base != null ? ' · peso a su medida'
+          : ' · sin peso' // ejercicio propio del gym: la app no lo sabe calcular
+  return `${item.series} × ${item.reps} · ${item.descansoSeg} s${extra}`
+}
+
+/* Dosis inicial al añadir un ejercicio, según en qué se mide. */
+function dosisInicial(ejercicio) {
+  const ficha = fichaEjercicio(ejercicio)
+  if (ficha.tipo === TIPOS.TIEMPO) return { series: '1', reps: '1', descansoSeg: '60', pesoSugerido: '' }
+  return { series: '3', reps: '12', descansoSeg: '60', pesoSugerido: '' }
+}
+
 /* Ajusta la dosis del ejercicio dentro de ESTE día de la rutina. */
 function EditorDosis({ ejercicio, dosis, setDosis, guardar, quitar, cancelar }) {
+  const { aviso, campos, valor } = etiquetasDosis(fichaEjercicio(ejercicio))
   return (
     <div style={{ ...card, border: '1.5px solid var(--gym-color)', padding: 12 }}>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
         <Miniatura ejercicio={ejercicio} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 600 }}>{ejercicio?.nombre ?? 'Ejercicio'}</div>
-          <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>{ejercicio?.grupo}</div>
+          <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>
+            {ejercicio?.grupo}{aviso ? ` · ${aviso}` : ''}
+          </div>
         </div>
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-        {[['series', 'Series'], ['reps', 'Reps'], ['descansoSeg', 'Descanso (s)']].map(([k, label]) => (
+        {campos.map(([k, label]) => (
           <div key={k} style={campo}>
             <div style={{ fontSize: 9.5, color: 'var(--text-3)' }}>{label}</div>
             <input type="number" inputMode="numeric" value={dosis[k]} onChange={(e) => setDosis({ ...dosis, [k]: e.target.value })} style={inputNum} />
           </div>
         ))}
       </div>
-      <div style={{ ...campo, marginTop: 8, flex: 'none' }}>
-        <div style={{ fontSize: 9.5, color: 'var(--text-3)' }}>Peso sugerido (kg) · opcional</div>
-        <input type="number" inputMode="decimal" value={dosis.pesoSugerido} onChange={(e) => setDosis({ ...dosis, pesoSugerido: e.target.value })} placeholder="Vacío = el cliente elige el suyo" style={inputNum} />
-      </div>
+      {valor && (
+        <div style={{ ...campo, marginTop: 8, flex: 'none' }}>
+          <div style={{ fontSize: 9.5, color: 'var(--text-3)' }}>{valor.label}</div>
+          <input type="number" inputMode="decimal" value={dosis.pesoSugerido} onChange={(e) => setDosis({ ...dosis, pesoSugerido: e.target.value })} placeholder={valor.placeholder} style={inputNum} />
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
         <button onClick={guardar} style={{ flex: 1, background: 'var(--gym-color)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '9px 0', fontSize: 12, fontWeight: 600 }}>Guardar</button>
         {quitar && <button onClick={quitar} style={{ border: '1px solid #f3d5d5', color: 'var(--danger)', borderRadius: 'var(--radius-sm)', padding: '9px 12px', fontSize: 12, fontWeight: 600, background: 'var(--surface)' }}>Quitar</button>}
@@ -70,6 +131,7 @@ export default function AdminEditorRutina() {
   const [guardando, setGuardando] = useState(false)
   const [guardado, setGuardado] = useState(false)
   const [confirmandoBorrar, setConfirmandoBorrar] = useState(false)
+  const [mostrarSinEquipo, setMostrarSinEquipo] = useState(false)
 
   useEffect(() => {
     if (!gym.id) return
@@ -88,9 +150,12 @@ export default function AdminEditorRutina() {
   }
 
   const guardarDosis = () => {
+    const ejEditado = porId[editandoIdx !== null ? sesion?.ejercicios[editandoIdx]?.ejercicioId : nuevoEjercicioId]
+    const tipo = fichaEjercicio(ejEditado).tipo
     const datos = {
-      series: Number(dosis.series) || 3,
-      reps: Number(dosis.reps) || 12,
+      series: Number(dosis.series) || 1,
+      // En los de tiempo no se piden reps: la duración va en el valor sugerido
+      reps: tipo === TIPOS.TIEMPO ? 1 : Number(dosis.reps) || 12,
       descansoSeg: Number(dosis.descansoSeg) || 60,
       pesoSugerido: dosis.pesoSugerido === '' ? null : Number(dosis.pesoSugerido),
     }
@@ -127,7 +192,12 @@ export default function AdminEditorRutina() {
   }
 
   const q = busqueda.trim().toLowerCase()
-  const disponibles = ejercicios.filter((e) => (grupo === 'todos' || e.grupo === grupo) && (!q || e.nombre.toLowerCase().includes(q)))
+  const coinciden = ejercicios.filter((e) => (grupo === 'todos' || e.grupo === grupo) && (!q || e.nombre.toLowerCase().includes(q)))
+  // Los que no se pueden hacer con el inventario del gym se apartan, pero NO
+  // se prohíben: el entrenador siempre puede mostrarlos y usarlos igual.
+  const disponibles = coinciden.filter((e) => puedeHacerse(e, gym).ok)
+  const sinEquipo = coinciden.filter((e) => !puedeHacerse(e, gym).ok)
+  const lista = mostrarSinEquipo ? [...disponibles, ...sinEquipo] : disponibles
 
   return (
     <>
@@ -198,9 +268,7 @@ export default function AdminEditorRutina() {
               <Miniatura ejercicio={ej} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{ej?.nombre ?? 'Ejercicio ya no está en la biblioteca'}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                  {item.series} × {item.reps} · {item.descansoSeg} s{item.pesoSugerido != null ? ` · ${item.pesoSugerido} kg` : ''}
-                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{resumenDosis(item, ej)}</div>
               </div>
               <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--gym-color)' }}>Ajustar</span>
             </button>
@@ -222,29 +290,45 @@ export default function AdminEditorRutina() {
               ))}
             </div>
             <div style={{ maxHeight: 260, overflowY: 'auto', marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {disponibles.length === 0 && (
+              {lista.length === 0 && (
                 <div style={{ fontSize: 11.5, color: 'var(--text-3)', textAlign: 'center', padding: '16px 0' }}>
                   Sin resultados. Añádelo en la pestaña <b>Ejercicios</b>.
                 </div>
               )}
-              {disponibles.map((ej) => (
-                <button
-                  key={ej.id}
-                  onClick={() => {
-                    setNuevoEjercicioId(ej.id)
-                    setDosis({ series: '3', reps: '12', descansoSeg: '60', pesoSugerido: '' })
-                    setEligiendo(false)
-                  }}
-                  style={{ display: 'flex', gap: 10, alignItems: 'center', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 8, background: 'var(--surface-2)', textAlign: 'left' }}
-                >
-                  <Miniatura ejercicio={ej} tam={34} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 600 }}>{ej.nombre}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{ej.grupo}</div>
-                  </div>
-                </button>
-              ))}
+              {lista.map((ej) => {
+                const falta = puedeHacerse(ej, gym).falta
+                return (
+                  <button
+                    key={ej.id}
+                    onClick={() => {
+                      setNuevoEjercicioId(ej.id)
+                      setDosis(dosisInicial(ej))
+                      setEligiendo(false)
+                    }}
+                    style={{ display: 'flex', gap: 10, alignItems: 'center', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 8, background: 'var(--surface-2)', textAlign: 'left', opacity: falta ? 0.65 : 1 }}
+                  >
+                    <Miniatura ejercicio={ej} tam={34} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 600 }}>{ej.nombre}</div>
+                      <div style={{ fontSize: 10, color: falta ? 'var(--warning-text)' : 'var(--text-3)' }}>
+                        {falta ? `Te falta: ${falta}` : ej.grupo}
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
+
+            {sinEquipo.length > 0 && (
+              <button
+                onClick={() => setMostrarSinEquipo((v) => !v)}
+                style={{ width: '100%', marginTop: 8, fontSize: 11, fontWeight: 600, color: 'var(--text-3)', padding: '6px 0', textAlign: 'center', lineHeight: 1.4 }}
+              >
+                {mostrarSinEquipo
+                  ? 'Ocultar los que necesitan equipo que no tienes'
+                  : `${sinEquipo.length} ejercicio${sinEquipo.length === 1 ? '' : 's'} más necesitan equipo que no tienes · Ver`}
+              </button>
+            )}
             <button onClick={() => setEligiendo(false)} style={{ width: '100%', marginTop: 8, fontSize: 12, fontWeight: 600, color: 'var(--text-3)', padding: '6px 0' }}>Cancelar</button>
           </div>
         ) : (

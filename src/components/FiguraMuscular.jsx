@@ -6,9 +6,9 @@
 export default function FiguraMuscular({ grupos = [], ancho = 104 }) {
   const activos = new Set(grupos.filter(Boolean).map((g) => g.toLowerCase()))
   const on = (g) => activos.has(g)
-  const fill = (g) => (on(g) ? 'var(--gym-color)' : 'var(--track, #2b2b31)')
+  const fill = (g) => (on(g) ? 'var(--gym-color)' : 'var(--figura-off)')
   const glow = (g) => (on(g) ? { filter: 'url(#brillo-musculo)' } : undefined)
-  const base = 'var(--surface-2, #202024)'
+  const base = 'var(--figura-base)'
 
   return (
     <svg width={ancho} height={ancho * 1.9} viewBox="16 0 108 205" fill="none" aria-hidden="true">
@@ -44,10 +44,10 @@ export default function FiguraMuscular({ grupos = [], ancho = 104 }) {
       {/* Core / abdomen */}
       <g style={glow('core')}>
         <rect x="61" y="61" width="18" height="32" rx="6" fill={fill('core')} />
-        <line x1="61" y1="70" x2="79" y2="70" stroke="var(--bg, #0c0c0e)" strokeWidth="1.4" />
-        <line x1="61" y1="78" x2="79" y2="78" stroke="var(--bg, #0c0c0e)" strokeWidth="1.4" />
-        <line x1="61" y1="86" x2="79" y2="86" stroke="var(--bg, #0c0c0e)" strokeWidth="1.4" />
-        <line x1="70" y1="62" x2="70" y2="92" stroke="var(--bg, #0c0c0e)" strokeWidth="1.4" />
+        <line x1="61" y1="70" x2="79" y2="70" stroke="var(--bg)" strokeWidth="1.4" />
+        <line x1="61" y1="78" x2="79" y2="78" stroke="var(--bg)" strokeWidth="1.4" />
+        <line x1="61" y1="86" x2="79" y2="86" stroke="var(--bg)" strokeWidth="1.4" />
+        <line x1="70" y1="62" x2="70" y2="92" stroke="var(--bg)" strokeWidth="1.4" />
       </g>
 
       {/* Brazos: bíceps + antebrazo */}

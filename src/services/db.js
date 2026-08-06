@@ -408,7 +408,11 @@ export async function vincularGym(user, gym, datosExtra = {}) {
       documento: datosExtra.documento ?? '',
       nacimiento: datosExtra.nacimiento ?? '',
       correo: user.email ?? '',
-      fotoUrl: null,
+      fotoUrl: datosExtra.fotoUrl ?? null,
+      // Para calcular su punto de partida en cada ejercicio (pueden ir vacíos)
+      genero: datosExtra.genero ?? null,
+      estatura: datosExtra.estatura ?? null,
+      actividad: datosExtra.actividad ?? null,
       estado: 'activo',
       creadoEl: serverTimestamp(),
     })

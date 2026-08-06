@@ -22,6 +22,7 @@ import AdminRutinas from './screens/admin/AdminRutinas'
 import AdminEditorRutina from './screens/admin/AdminEditorRutina'
 import AdminComunicados from './screens/admin/AdminComunicados'
 import AdminConfig from './screens/admin/AdminConfig'
+import AdminMaquinas from './screens/admin/AdminMaquinas'
 import AdminInvitar from './screens/admin/AdminInvitar'
 import AdminMas from './screens/admin/AdminMas'
 import SuperShell from './screens/superadmin/SuperShell'
@@ -59,6 +60,7 @@ export default function App() {
               <Route path="rutinas/editor/:id" element={<AdminEditorRutina />} />
               <Route path="comunicados" element={<AdminComunicados />} />
               <Route path="config" element={<AdminConfig />} />
+              <Route path="maquinas" element={<AdminMaquinas />} />
               <Route path="invitar" element={<AdminInvitar />} />
               <Route path="mas" element={<AdminMas />} />
             </Route>

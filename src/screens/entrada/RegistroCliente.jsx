@@ -30,7 +30,7 @@ export default function RegistroCliente() {
   const { usuario, recargarPerfil, crearCuentaCorreo, entrarConGoogle } = useAuth()
   const { setGym } = useGym()
   const [gym, setGymLocal] = useState(undefined)
-  const [form, setForm] = useState({ nombre: '', celular: '', documento: '', dia: '', mes: '', anio: '', correo: '', clave: '' })
+  const [form, setForm] = useState({ nombre: '', celular: '', documento: '', dia: '', mes: '', anio: '', correo: '', clave: '', genero: '', estatura: '', actividad: '' })
   const [foto, setFoto] = useState(null)
   const [vistaFoto, setVistaFoto] = useState(null)
   const [conGoogle, setConGoogle] = useState(false)
@@ -122,6 +122,10 @@ export default function RegistroCliente() {
         documento: form.documento.trim(),
         nacimiento: nacimiento(),
         fotoUrl,
+        // Para calcular su punto de partida en cada ejercicio (opcionales)
+        genero: form.genero || null,
+        estatura: parseFloat(form.estatura.replace(',', '.')) || null,
+        actividad: form.actividad || null,
       })
       sessionStorage.removeItem('zg-codigo-invitacion')
       const perfil = await recargarPerfil()
@@ -169,6 +173,44 @@ export default function RegistroCliente() {
             <input inputMode="numeric" maxLength={2} value={form.mes} onChange={(e) => set('mes')(e.target.value.replace(/\D/g, ''))} placeholder="MM" style={{ ...inputStyle, width: 34, textAlign: 'center' }} />
             <span style={{ color: 'var(--text-4)' }}>/</span>
             <input inputMode="numeric" maxLength={4} value={form.anio} onChange={(e) => set('anio')(e.target.value.replace(/\D/g, ''))} placeholder="AAAA" style={{ ...inputStyle, width: 52, textAlign: 'center' }} />
+          </div>
+        </div>
+
+        {/* Datos para calcular su punto de partida en cada ejercicio.
+            Son opcionales: si los deja vacíos, la app usa valores conservadores. */}
+        <div style={{ marginTop: 4 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600 }}>Para armar tus pesos 💪</div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5, marginTop: 2 }}>
+            Con esto tu rutina llega con un peso de arranque hecho a tu medida. Puedes cambiarlo cuando quieras.
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[['hombre', 'Hombre'], ['mujer', 'Mujer']].map(([v, etiqueta]) => (
+            <button
+              key={v}
+              onClick={() => set('genero')(form.genero === v ? '' : v)}
+              style={{ flex: 1, borderRadius: 'var(--radius)', padding: '11px 0', fontSize: 12.5, fontWeight: 600, background: form.genero === v ? color : 'var(--surface)', color: form.genero === v ? '#fff' : 'var(--text-2)', border: form.genero === v ? 'none' : '1px solid var(--border-2)' }}
+            >
+              {etiqueta}
+            </button>
+          ))}
+        </div>
+
+        <Campo label="Estatura (m)" value={form.estatura} onChange={set('estatura')} placeholder="1,70" inputMode="decimal" />
+
+        <div>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 6 }}>¿Qué tanto te mueves hoy?</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[['nunca', 'Nunca'], ['aveces', 'De vez en cuando'], ['regular', 'Regular']].map(([v, etiqueta]) => (
+              <button
+                key={v}
+                onClick={() => set('actividad')(form.actividad === v ? '' : v)}
+                style={{ flex: 1, borderRadius: 'var(--radius)', padding: '10px 4px', fontSize: 11, fontWeight: 600, lineHeight: 1.25, background: form.actividad === v ? color : 'var(--surface)', color: form.actividad === v ? '#fff' : 'var(--text-2)', border: form.actividad === v ? 'none' : '1px solid var(--border-2)' }}
+              >
+                {etiqueta}
+              </button>
+            ))}
           </div>
         </div>
 

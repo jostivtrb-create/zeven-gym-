@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useGym } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
-import { obtenerMembresia, listarPagosCliente, desvincularGym } from '../../services/db'
+import { obtenerMembresia, listarPagosCliente, desvincularGym, actualizarUsuario } from '../../services/db'
 import { activarNotificaciones, desactivarNotificaciones, notificacionesActivas, soportaNotificaciones } from '../../services/notificaciones'
 
 const seccionTitulo = { fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-3)' }
@@ -13,13 +13,42 @@ const FECHA_CORTA = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 's
 const MES_LARGO = new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric' })
 
 export default function Perfil() {
-  const { gym } = useGym()
-  const { perfil, salir } = useAuth()
+  const { gym, tema, setTema } = useGym()
+  const oscuro = tema === 'oscuro'
+  const { perfil, salir, recargarPerfil } = useAuth()
   const [membresia, setMembresia] = useState(null)
   const [pagos, setPagos] = useState([])
   const [confirmandoSalida, setConfirmandoSalida] = useState(false)
   const [ocupado, setOcupado] = useState(false)
   const [push, setPush] = useState({ soporta: false, activo: false, mensaje: '' })
+  // Datos que alimentan el punto de partida de cada ejercicio
+  const [medida, setMedida] = useState({ genero: '', estatura: '', actividad: '' })
+  const [medidaGuardada, setMedidaGuardada] = useState(false)
+
+  useEffect(() => {
+    setMedida({
+      genero: perfil?.genero ?? '',
+      estatura: perfil?.estatura != null ? String(perfil.estatura).replace('.', ',') : '',
+      actividad: perfil?.actividad ?? '',
+    })
+  }, [perfil?.genero, perfil?.estatura, perfil?.actividad])
+
+  const guardarMedida = async (cambios) => {
+    const nuevo = { ...medida, ...cambios }
+    setMedida(nuevo)
+    try {
+      await actualizarUsuario(perfil.uid, {
+        genero: nuevo.genero || null,
+        estatura: parseFloat(String(nuevo.estatura).replace(',', '.')) || null,
+        actividad: nuevo.actividad || null,
+      })
+      await recargarPerfil()
+      setMedidaGuardada(true)
+      setTimeout(() => setMedidaGuardada(false), 2000)
+    } catch (e) {
+      console.warn('guardarMedida:', e.code ?? e.message)
+    }
+  }
 
   useEffect(() => {
     soportaNotificaciones().then((soporta) => setPush((p) => ({ ...p, soporta, activo: notificacionesActivas() })))
@@ -171,6 +200,66 @@ export default function Perfil() {
                 <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v}</span>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Alimenta el punto de partida que ve en cada ejercicio de su rutina */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={seccionTitulo}>Para calcular mis pesos</div>
+          <div style={{ ...card, padding: 14 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5 }}>
+              Con estos datos tu rutina te muestra un peso de arranque a tu medida. Cambian solo tus sugerencias, nunca lo que ya ajustaste.
+            </div>
+
+            <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 12, marginBottom: 6 }}>Género</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {[['hombre', 'Hombre'], ['mujer', 'Mujer']].map(([v, etiqueta]) => (
+                <button key={v} onClick={() => guardarMedida({ genero: medida.genero === v ? '' : v })}
+                  style={{ flex: 1, borderRadius: 'var(--radius-sm)', padding: '9px 0', fontSize: 12, fontWeight: 600, background: medida.genero === v ? 'var(--gym-color)' : 'var(--surface-2)', color: medida.genero === v ? '#fff' : 'var(--text-2)', border: medida.genero === v ? 'none' : '1px solid var(--border)' }}>
+                  {etiqueta}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 12, marginBottom: 6 }}>Estatura (m)</div>
+            <input
+              inputMode="decimal" value={medida.estatura}
+              onChange={(e) => setMedida({ ...medida, estatura: e.target.value })}
+              onBlur={() => guardarMedida({})}
+              placeholder="1,70"
+              style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '9px 10px', fontSize: 13, fontWeight: 600, outline: 'none', background: 'var(--surface-2)', color: 'var(--text)', boxSizing: 'border-box' }}
+            />
+
+            <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 12, marginBottom: 6 }}>¿Qué tanto te mueves?</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {[['nunca', 'Nunca'], ['aveces', 'De vez en cuando'], ['regular', 'Regular']].map(([v, etiqueta]) => (
+                <button key={v} onClick={() => guardarMedida({ actividad: medida.actividad === v ? '' : v })}
+                  style={{ flex: 1, borderRadius: 'var(--radius-sm)', padding: '9px 4px', fontSize: 10.5, fontWeight: 600, lineHeight: 1.25, background: medida.actividad === v ? 'var(--gym-color)' : 'var(--surface-2)', color: medida.actividad === v ? '#fff' : 'var(--text-2)', border: medida.actividad === v ? 'none' : '1px solid var(--border)' }}>
+                  {etiqueta}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ fontSize: 10.5, color: medidaGuardada ? 'var(--gym-color-text)' : 'var(--text-4)', marginTop: 10, fontWeight: medidaGuardada ? 600 : 400 }}>
+              {medidaGuardada ? '✓ Guardado' : 'Tu peso se toma de las medidas que registras en Progreso.'}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ ...card, padding: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 99, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flex: 'none' }}>
+              {oscuro ? '🌙' : '☀️'}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600 }}>Modo {oscuro ? 'oscuro' : 'claro'}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5 }}>
+                {oscuro ? 'Ideal para entrenar de noche. Toca para pasar a claro.' : 'Fondo claro y luminoso. Toca para volver al oscuro.'}
+              </div>
+            </div>
+            <button onClick={() => setTema(oscuro ? 'claro' : 'oscuro')} aria-pressed={oscuro} aria-label="Cambiar entre modo oscuro y claro" style={{ width: 42, height: 24, borderRadius: 99, background: oscuro ? 'var(--gym-color)' : 'var(--border-2)', position: 'relative', flex: 'none', transition: 'background .2s' }}>
+              <span style={{ position: 'absolute', top: 2, left: oscuro ? 20 : 2, width: 20, height: 20, borderRadius: 99, background: '#fff', transition: 'left .2s' }} />
+            </button>
           </div>
         </div>
 
